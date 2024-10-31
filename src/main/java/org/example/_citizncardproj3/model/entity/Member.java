@@ -285,4 +285,11 @@ public class Member implements UserDetails {
             this.notificationSettings.setMember(this);
         }
     }
+
+    public static class MemberBuilder {
+        public MemberBuilder gender(String genderStr) {
+            this.gender = Gender.valueOf(genderStr.toUpperCase());
+            return this;
+        }
+    }
 }

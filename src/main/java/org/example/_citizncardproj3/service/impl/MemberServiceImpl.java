@@ -237,10 +237,32 @@ public class MemberServiceImpl implements MemberService {
                 .phone(member.getPhone())
                 .address(member.getAddress())
                 .birthday(member.getBirthday())
-                .gender(member.getGender())
-                .status(member.getStatus())
+                .gender(member.getGender().getDescription())
+                .status(convertMemberStatus(member.getStatus()))  // 轉換狀態
                 .lastLoginTime(member.getLastLoginTime())
                 .registrationTime(member.getCreatedAt())
                 .build();
+    }
+
+    /**
+     * 轉換會員狀態
+     */
+    private MemberResponse.MemberStatus convertMemberStatus(Member.MemberStatus status) {
+        if (status == null) {
+            return MemberResponse.MemberStatus.INACTIVE;
+        }
+
+        switch (status) {
+            case ACTIVE:
+                return MemberResponse.MemberStatus.ACTIVE;
+            case INACTIVE:
+                return MemberResponse.MemberStatus.INACTIVE;
+            case SUSPENDED:
+                return MemberResponse.MemberStatus.SUSPENDED;
+            case LOCKED:
+                return MemberResponse.MemberStatus.LOCKED;
+            default:
+                return MemberResponse.MemberStatus.INACTIVE;
+        }
     }
 }

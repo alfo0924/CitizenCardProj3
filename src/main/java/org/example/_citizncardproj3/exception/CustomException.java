@@ -272,4 +272,22 @@ public class CustomException extends RuntimeException {
         }
     }
 
+    public static class EmailAlreadyExistsException extends CustomException {
+        public EmailAlreadyExistsException(String email) {
+            super("Email已被註冊: " + email, HttpStatus.CONFLICT, "MEMBER_002");
+        }
+    }
+
+    public static class PhoneAlreadyExistsException extends CustomException {
+        public PhoneAlreadyExistsException(String phone) {
+            super("手機號碼已被註冊: " + phone, HttpStatus.CONFLICT, "MEMBER_003");
+        }
+    }
+
+    public static class PasswordMismatchException extends CustomException {
+        public PasswordMismatchException() {
+            super("密碼不一致", HttpStatus.BAD_REQUEST, "MEMBER_004");
+        }
+    }
+
 }

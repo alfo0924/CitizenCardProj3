@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example._citizncardproj3.model.entity.Member;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -186,4 +187,42 @@ public class MemberResponse {
         return String.format("Member{id=%d, email='%s', name='%s', status=%s}",
                 memberId, email, name, status);
     }
+
+    public static MemberResponse fromMember(Member member) {
+        return MemberResponse.builder()
+                .memberId(member.getMemberId())
+                .email(member.getEmail())
+                .name(member.getName())
+                .phone(member.getPhone())
+                .address(member.getAddress())
+                .birthday(member.getBirthday())
+                .gender(member.getGender().getDescription())
+                .status(convertStatus(member.getStatus())) // 轉換狀態
+                .lastLoginTime(member.getLastLoginTime())
+                .registrationTime(member.getCreatedAt())
+                .build();
+    }
+
+    /**
+     * 轉換會員狀態
+     */
+    private static MemberResponse.MemberStatus convertStatus(Member.MemberStatus status) {
+        if (status == null) {
+            return MemberResponse.MemberStatus.INACTIVE;
+        }
+
+        switch (status) {
+            case ACTIVE:
+                return MemberResponse.MemberStatus.ACTIVE;
+            case INACTIVE:
+                return MemberResponse.MemberStatus.INACTIVE;
+            case SUSPENDED:
+                return MemberResponse.MemberStatus.SUSPENDED;
+            case LOCKED:
+                return MemberResponse.MemberStatus.LOCKED;
+            default:
+                return MemberResponse.MemberStatus.INACTIVE;
+        }
+    }
+
 }
