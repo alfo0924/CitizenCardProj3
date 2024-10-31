@@ -1,6 +1,8 @@
 package org.example._citizncardproj3.service;
 
 import org.example._citizncardproj3.model.entity.VirtualCard;
+import org.example._citizncardproj3.model.entity.VirtualCardUsage;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.Map;

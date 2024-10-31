@@ -5,15 +5,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.example._citizncardproj3.exception.CustomException;
 import org.example._citizncardproj3.model.entity.Member;
 import org.example._citizncardproj3.model.entity.VirtualCard;
+import org.example._citizncardproj3.model.entity.VirtualCardUsage;
 import org.example._citizncardproj3.repository.MemberRepository;
 import org.example._citizncardproj3.repository.VirtualCardRepository;
 import org.example._citizncardproj3.service.NotificationService;
 import org.example._citizncardproj3.service.VirtualCardService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -182,5 +186,30 @@ public class VirtualCardServiceImpl implements VirtualCardService {
                 .orElseThrow(() -> new IllegalStateException("會員尚未創建虛擬卡"));
 
         return virtualCard.validateDevice(deviceId);
+    }
+
+    @Override
+    public VirtualCard.CardStatus checkCardStatus(String userEmail) {
+        return null;
+    }
+
+    @Override
+    public VirtualCard updatePhoneNumber(String userEmail, String newPhoneNumber) {
+        return null;
+    }
+
+    @Override
+    public Page<VirtualCardUsage> getUsageHistory(String userEmail, Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public boolean isDeviceRegistered(String deviceId) {
+        return false;
+    }
+
+    @Override
+    public Map<String, Object> getCardStatistics(String userEmail) {
+        return Map.of();
     }
 }
