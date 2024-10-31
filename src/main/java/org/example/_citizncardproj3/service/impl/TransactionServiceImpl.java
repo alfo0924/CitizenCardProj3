@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -136,6 +137,51 @@ public class TransactionServiceImpl implements TransactionService {
                 .orElseThrow(() -> new CustomException.WalletNotFoundException(walletId));
 
         return transactionRepository.getTransactionStatistics(wallet);
+    }
+
+    @Override
+    public boolean validateTransaction(Long transactionId) {
+        return false;
+    }
+
+    @Override
+    public void cancelTransaction(Long transactionId, String reason) {
+
+    }
+
+    @Override
+    public Transaction.TransactionStatus checkTransactionStatus(Long transactionId) {
+        return null;
+    }
+
+    @Override
+    public List<Transaction> getPendingTransactions() {
+        return List.of();
+    }
+
+    @Override
+    public void handleTimeoutTransactions() {
+
+    }
+
+    @Override
+    public Transaction getTransactionByNumber(String transactionNumber) {
+        return null;
+    }
+
+    @Override
+    public Page<Transaction> getTransactionsByType(Long walletId, Transaction.TransactionType type, Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public boolean checkTransactionLimit(Long walletId, Double amount) {
+        return false;
+    }
+
+    @Override
+    public Map<String, Object> getDailyTransactionStats(Long walletId) {
+        return Map.of();
     }
 
     // 私有輔助方法

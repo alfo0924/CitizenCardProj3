@@ -207,4 +207,42 @@ public class CustomException extends RuntimeException {
         }
     }
 
+    // 交易相關異常
+    public static class TransactionNotFoundException extends CustomException {
+        public TransactionNotFoundException(Long transactionId) {
+            super("找不到交易記錄: " + transactionId, HttpStatus.NOT_FOUND, "TRANSACTION_001");
+        }
+    }
+
+    public static class TransactionFailedException extends CustomException {
+        public TransactionFailedException(String message) {
+            super(message, HttpStatus.BAD_REQUEST, "TRANSACTION_002");
+        }
+    }
+
+    public static class TransactionTimeoutException extends CustomException {
+        public TransactionTimeoutException(Long transactionId) {
+            super("交易已超時: " + transactionId, HttpStatus.REQUEST_TIMEOUT, "TRANSACTION_003");
+        }
+    }
+
+    public static class DuplicateTransactionException extends CustomException {
+        public DuplicateTransactionException(String transactionNumber) {
+            super("重複的交易編號: " + transactionNumber, HttpStatus.CONFLICT, "TRANSACTION_004");
+        }
+    }
+
+    public static class InvalidTransactionStatusException extends CustomException {
+        public InvalidTransactionStatusException(String message) {
+            super(message, HttpStatus.BAD_REQUEST, "TRANSACTION_005");
+        }
+    }
+
+    public static class TransactionLimitExceededException extends CustomException {
+        public TransactionLimitExceededException(String message) {
+            super(message, HttpStatus.FORBIDDEN, "TRANSACTION_006");
+        }
+    }
+
+
 }
