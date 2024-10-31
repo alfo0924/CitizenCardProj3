@@ -245,4 +245,31 @@ public class CustomException extends RuntimeException {
     }
 
 
+    /**
+     * 場次不存在異常
+     */
+    public static class ScheduleNotFoundException extends CustomException {
+        public ScheduleNotFoundException(Long scheduleId) {
+            super("找不到場次: " + scheduleId, HttpStatus.NOT_FOUND, "SCHEDULE_001");
+        }
+    }
+
+    /**
+     * 場次衝突異常
+     */
+    public static class ScheduleConflictException extends CustomException {
+        public ScheduleConflictException(String message) {
+            super(message, HttpStatus.CONFLICT, "SCHEDULE_002");
+        }
+    }
+
+    /**
+     * 場次已取消異常
+     */
+    public static class ScheduleCancelledException extends CustomException {
+        public ScheduleCancelledException(Long scheduleId) {
+            super("場次已取消: " + scheduleId, HttpStatus.BAD_REQUEST, "SCHEDULE_003");
+        }
+    }
+
 }

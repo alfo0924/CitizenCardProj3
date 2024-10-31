@@ -13,6 +13,8 @@ import org.example._citizncardproj3.repository.MemberRepository;
 import org.example._citizncardproj3.repository.WalletRepository;
 import org.example._citizncardproj3.service.MemberService;
 import org.example._citizncardproj3.util.JwtUtil;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -157,6 +160,61 @@ public class MemberServiceImpl implements MemberService {
         // 更新密碼
         member.resetPassword(passwordEncoder.encode(newPassword));
         memberRepository.save(member);
+    }
+
+    @Override
+    public void sendPasswordResetEmail(String email) {
+
+    }
+
+    @Override
+    public void verifyPasswordResetToken(String token, String newPassword) {
+
+    }
+
+    @Override
+    public void deactivateAccount(String userEmail, String reason) {
+
+    }
+
+    @Override
+    public void activateAccount(String userEmail) {
+
+    }
+
+    @Override
+    public boolean isEmailExists(String email) {
+        return false;
+    }
+
+    @Override
+    public boolean isPhoneExists(String phone) {
+        return false;
+    }
+
+    @Override
+    public Page<MemberResponse> getAllMembers(Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public Page<MemberResponse> searchMembers(String keyword, Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public MemberResponse updateMemberStatus(String userEmail, String status) {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> getMemberStatistics(String userEmail) {
+        return Map.of();
+    }
+
+    @Override
+    public boolean checkPermission(String userEmail, String permission) {
+        return false;
     }
 
     // 私有輔助方法

@@ -211,4 +211,32 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
             @Param("currentTime") LocalDateTime currentTime
     );
 
+
+    /**
+     * 查詢場地在指定時間範圍的場次
+     */
+    @Query("SELECT ms FROM MovieSchedule ms WHERE ms.venue = :venue " +
+            "AND ((ms.showTime BETWEEN :startTime AND :endTime) OR " +
+            "(ms.endTime BETWEEN :startTime AND :endTime) OR " +
+            "(ms.showTime <= :startTime AND ms.endTime >= :endTime))")
+    List<MovieSchedule> findByVenueAndShowTimeBetween(
+            @Param("venue") Venue venue,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
+
+    /**
+     * 檢查場地在指定時間範圍是否有場次
+     */
+    @Query("SELECT COUNT(ms) > 0 FROM MovieSchedule ms WHERE ms.venue = :venue " +
+            "AND ms.status != 'CANCELLED' " +
+            "AND ((ms.showTime BETWEEN :startTime AND :endTime) OR " +
+            "(ms.endTime BETWEEN :startTime AND :endTime) OR " +
+            "(ms.showTime <= :startTime AND ms.endTime >= :endTime))")
+    boolean hasScheduleConflict(
+            @Param("venue") Venue venue,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
+
 }

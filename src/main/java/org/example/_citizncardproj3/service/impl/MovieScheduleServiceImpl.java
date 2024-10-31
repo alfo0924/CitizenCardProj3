@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -118,6 +119,41 @@ public class MovieScheduleServiceImpl implements MovieScheduleService {
         scheduleRepository.save(schedule);
     }
 
+    @Override
+    public boolean isScheduleBookable(Long scheduleId) {
+        return false;
+    }
+
+    @Override
+    public Map<String, Object> getSeatConfiguration(Long scheduleId) {
+        return Map.of();
+    }
+
+    @Override
+    public boolean isSeatAvailable(Long scheduleId, String seatNumber) {
+        return false;
+    }
+
+    @Override
+    public void lockSeats(Long scheduleId, List<String> seatNumbers, int duration) {
+
+    }
+
+    @Override
+    public void unlockSeats(Long scheduleId, List<String> seatNumbers) {
+
+    }
+
+    @Override
+    public Map<String, Object> getScheduleStatistics(Long scheduleId) {
+        return Map.of();
+    }
+
+    @Override
+    public void updateExpiredSchedules() {
+
+    }
+
     // 私有輔助方法
     private void validateScheduleTime(CityMovie movie, LocalDateTime showTime) {
         if (showTime.isBefore(LocalDateTime.now())) {
@@ -134,22 +170,30 @@ public class MovieScheduleServiceImpl implements MovieScheduleService {
     }
 
     private void validateVenueAvailability(Venue venue, LocalDateTime showTime) {
+        // 檢查場地狀態
         if (venue.getStatus() != Venue.VenueStatus.ACTIVE) {
-            throw new IllegalStateException("場地目前無法使用");
+            if (venue.getStatus() == Venue.VenueStatus.MAINTENANCE) {
+                throw new CustomException.VenueMaintenanceException(venue.getVenueId());
+            } else {
+                throw new CustomException.VenueNotAvailableException("場地目前無法使用");
+            }
         }
 
-        // 檢查場地在該時段是否已有其他場次
-        boolean hasConflict = scheduleRepository.findByVenueAndShowTimeBetween(
+        // 檢查場地在該時段是否有衝突
+        boolean hasConflict = scheduleRepository.hasScheduleConflict(
                 venue,
                 showTime.minusMinutes(30),  // 預留30分鐘清場時間
-                showTime.plusMinutes(180)    // 假設電影最長3小時
-        ).size() > 0;
+                showTime.plusMinutes(180)   // 假設電影最長3小時
+        );
 
         if (hasConflict) {
-            throw new IllegalStateException("場地在該時段已有其他場次");
+            throw new CustomException.ScheduleConflictException(
+                    String.format("場地 %s 在時段 %s 已有其他場次",
+                            venue.getVenueName(),
+                            showTime)
+            );
         }
     }
-
     private ScheduleResponse convertToResponse(MovieSchedule schedule) {
         return ScheduleResponse.builder()
                 .scheduleId(schedule.getScheduleId())
