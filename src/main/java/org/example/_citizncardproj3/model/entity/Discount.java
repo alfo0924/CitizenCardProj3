@@ -1,9 +1,6 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -58,8 +55,7 @@ public class Discount {
     @OneToMany(mappedBy = "discount")
     private List<DiscountUsage> usageHistory;
 
-    @Column(nullable = false)
-    private Boolean isActive;
+
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -71,6 +67,7 @@ public class Discount {
     private Boolean isDeleted;
 
     // 優惠類型枚舉
+    @Getter
     public enum DiscountType {
         FIXED_AMOUNT("固定金額"),
         PERCENTAGE("百分比折扣"),
@@ -82,9 +79,6 @@ public class Discount {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
 
@@ -178,6 +172,7 @@ public class Discount {
     }
 
     // 優惠狀態枚舉
+    @Getter
     public enum DiscountStatus {
         DRAFT("草稿"),
         ACTIVE("啟用"),
@@ -193,9 +188,6 @@ public class Discount {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 新增欄位
@@ -286,5 +278,14 @@ public class Discount {
 
         return true;
     }
+    // 添加公開的getter和setter方法
+    @Setter
+    @Getter
+    @Column(nullable = false)
+    private Boolean isActive = true;  // 設定預設值
 
+    // 如果需要布林值的getter，也可以添加
+    public boolean isActive() {
+        return isActive != null && isActive;
+    }
 }

@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -183,6 +184,31 @@ public class CityMovieServiceImpl implements CityMovieService {
 
         movie.setStatus(CityMovie.MovieStatus.END_SHOWING);
         movieRepository.save(movie);
+    }
+
+    @Override
+    public Page<MovieResponse> getUpcomingMovies(Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public Page<MovieResponse> getNowShowingMovies(Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public MovieResponse extendShowingPeriod(Long movieId, LocalDate endDate) {
+        return null;
+    }
+
+    @Override
+    public MovieResponse updateRating(Long movieId, String rating) {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> getMovieStatistics(Long movieId) {
+        return Map.of();
     }
 
     // 私有輔助方法

@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example._citizncardproj3.exception.CustomException;
 import org.example._citizncardproj3.model.dto.request.DiscountCreateRequest;
 import org.example._citizncardproj3.model.dto.request.DiscountUpdateRequest;
+import org.example._citizncardproj3.model.dto.response.DiscountResponse;
 import org.example._citizncardproj3.model.entity.Discount;
 import org.example._citizncardproj3.model.entity.DiscountUsage;
 import org.example._citizncardproj3.model.entity.Member;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -162,6 +164,81 @@ public class DiscountServiceImpl implements DiscountService {
 
         usage.cancel("用戶取消使用");
         discountUsageRepository.save(usage);
+    }
+
+    @Override
+    public boolean isDiscountAvailable(String discountCode, String userEmail) {
+        return false;
+    }
+
+    @Override
+    public Double calculateDiscountAmount(String discountCode, Double originalAmount) {
+        return 0.0;
+    }
+
+    @Override
+    public Page<DiscountUsage> getDiscountUsageHistory(String userEmail, Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public long getDiscountUsageCount(String userEmail, String discountCode) {
+        return 0;
+    }
+
+    @Override
+    public Discount extendValidity(Long discountId, int days) {
+        return null;
+    }
+
+    @Override
+    public void deactivateExpiredDiscounts() {
+
+    }
+
+    @Override
+    public Map<String, Object> getDiscountStatistics(Long discountId) {
+        return Map.of();
+    }
+
+    @Override
+    public boolean validateDiscountCode(String discountCode) {
+        return false;
+    }
+
+    @Override
+    public DiscountResponse getDiscount(Long discountId) {
+        return null;
+    }
+
+    @Override
+    public Page<DiscountResponse> getPublicDiscounts(Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public List<DiscountResponse> getAvailableDiscounts(String userEmail) {
+        return List.of();
+    }
+
+    @Override
+    public void deleteDiscount(Long discountId) {
+
+    }
+
+    @Override
+    public void useDiscount(Long discountId, Long orderId, String userEmail) {
+
+    }
+
+    @Override
+    public boolean validateDiscount(String discountCode) {
+        return false;
+    }
+
+    @Override
+    public Map<String, Object> getDiscountStatistics(LocalDateTime startDate, LocalDateTime endDate) {
+        return Map.of();
     }
 
     // 私有輔助方法

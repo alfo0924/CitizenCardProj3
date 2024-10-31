@@ -2,11 +2,13 @@ package org.example._citizncardproj3.service;
 
 import org.example._citizncardproj3.model.dto.request.DiscountCreateRequest;
 import org.example._citizncardproj3.model.dto.request.DiscountUpdateRequest;
+import org.example._citizncardproj3.model.dto.response.DiscountResponse;
 import org.example._citizncardproj3.model.entity.Discount;
 import org.example._citizncardproj3.model.entity.DiscountUsage;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -121,4 +123,40 @@ public interface DiscountService {
      * @return 是否有效
      */
     boolean validateDiscountCode(String discountCode);
+
+    /**
+     * 獲取優惠詳情
+     */
+    DiscountResponse getDiscount(Long discountId);
+
+    /**
+     * 獲取公開優惠列表
+     */
+    Page<DiscountResponse> getPublicDiscounts(Pageable pageable);
+
+    /**
+     * 獲取用戶可用優惠
+     */
+    List<DiscountResponse> getAvailableDiscounts(String userEmail);
+
+    /**
+     * 刪除優惠
+     */
+    void deleteDiscount(Long discountId);
+
+    /**
+     * 使用優惠
+     */
+    void useDiscount(Long discountId, Long orderId, String userEmail);
+
+    /**
+     * 驗證優惠
+     */
+    boolean validateDiscount(String discountCode);
+
+    /**
+     * 獲取優惠統計（按時間範圍）
+     */
+    Map<String, Object> getDiscountStatistics(LocalDateTime startDate, LocalDateTime endDate);
+
 }

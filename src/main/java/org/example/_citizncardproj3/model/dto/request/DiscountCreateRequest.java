@@ -185,4 +185,16 @@ public class DiscountCreateRequest {
         List<String> validCategories = List.of("ACTION", "COMEDY", "DRAMA", "HORROR", "ROMANCE");
         return applicableMovieCategories.stream().allMatch(validCategories::contains);
     }
+
+    /**
+     * 使用次數限制
+     */
+    @PositiveOrZero(message = "使用次數限制不能為負數")
+    private Integer usageLimit;
+
+    /**
+     * 是否啟用
+     */
+    private Boolean isActive = true;
+
 }

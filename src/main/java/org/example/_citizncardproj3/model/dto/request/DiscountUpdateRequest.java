@@ -181,4 +181,11 @@ public class DiscountUpdateRequest {
         List<String> validLevels = List.of("REGULAR", "SILVER", "GOLD", "PLATINUM");
         return applicableMembershipLevels.stream().allMatch(validLevels::contains);
     }
+
+    /**
+     * 使用次數限制
+     */
+    @PositiveOrZero(message = "使用次數限制不能為負數")
+    private Integer usageLimit;
+
 }

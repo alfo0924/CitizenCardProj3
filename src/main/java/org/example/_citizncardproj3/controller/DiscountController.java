@@ -36,7 +36,7 @@ public class DiscountController {
     public ResponseEntity<DiscountResponse> createDiscount(
             @Valid @RequestBody DiscountCreateRequest request) {
         try {
-            DiscountResponse discount = discountService.createDiscount(request);
+            DiscountResponse discount = DiscountResponse.fromEntity(discountService.createDiscount(request));
             return ResponseEntity.ok(discount);
         } catch (Exception e) {
             return ResponseEntity
@@ -82,7 +82,7 @@ public class DiscountController {
             @Parameter(description = "優惠ID") @PathVariable Long discountId,
             @Valid @RequestBody DiscountUpdateRequest request) {
         try {
-            DiscountResponse discount = discountService.updateDiscount(discountId, request);
+            DiscountResponse discount = DiscountResponse.fromEntity(discountService.updateDiscount(discountId, request));
             return ResponseEntity.ok(discount);
         } catch (Exception e) {
             return ResponseEntity
