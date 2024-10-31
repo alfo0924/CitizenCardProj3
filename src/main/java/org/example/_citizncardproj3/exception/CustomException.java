@@ -1,4 +1,158 @@
 package org.example._citizncardproj3.exception;
 
-public class CustomException {
+import lombok.Getter;
+import org.springframework.http.HttpStatus;
+
+@Getter
+public class CustomException extends RuntimeException {
+    private final String message;
+    private final HttpStatus status;
+    private final String errorCode;
+
+    public CustomException(String message, HttpStatus status, String errorCode) {
+        super(message);
+        this.message = message;
+        this.status = status;
+        this.errorCode = errorCode;
+    }
+
+    // 認證相關異常
+    public static class AuthenticationException extends CustomException {
+        public AuthenticationException(String message) {
+            super(message, HttpStatus.UNAUTHORIZED, "AUTH_001");
+        }
+    }
+
+    public static class InvalidCredentialsException extends CustomException {
+        public InvalidCredentialsException() {
+            super("帳號或密碼錯誤", HttpStatus.UNAUTHORIZED, "AUTH_002");
+        }
+    }
+
+    public static class TokenExpiredException extends CustomException {
+        public TokenExpiredException() {
+            super("Token已過期，請重新登入", HttpStatus.UNAUTHORIZED, "AUTH_003");
+        }
+    }
+
+    // 會員相關異常
+    public static class MemberNotFoundException extends CustomException {
+        public MemberNotFoundException(String email) {
+            super("找不到會員: " + email, HttpStatus.NOT_FOUND, "MEMBER_001");
+        }
+    }
+
+    public static class DuplicateEmailException extends CustomException {
+        public DuplicateEmailException(String email) {
+            super("Email已被註冊: " + email, HttpStatus.CONFLICT, "MEMBER_002");
+        }
+    }
+
+    public static class AccountLockedException extends CustomException {
+        public AccountLockedException() {
+            super("帳號已被鎖定，請聯繫客服", HttpStatus.FORBIDDEN, "MEMBER_003");
+        }
+    }
+
+    // 電影相關異常
+    public static class MovieNotFoundException extends CustomException {
+        public MovieNotFoundException(Long movieId) {
+            super("找不到電影: " + movieId, HttpStatus.NOT_FOUND, "MOVIE_001");
+        }
+    }
+
+    public static class InvalidScheduleException extends CustomException {
+        public InvalidScheduleException(String message) {
+            super(message, HttpStatus.BAD_REQUEST, "MOVIE_002");
+        }
+    }
+
+    public static class SeatNotAvailableException extends CustomException {
+        public SeatNotAvailableException(String seatNumber) {
+            super("座位已被預訂: " + seatNumber, HttpStatus.CONFLICT, "MOVIE_003");
+        }
+    }
+
+    // 訂票相關異常
+    public static class BookingNotFoundException extends CustomException {
+        public BookingNotFoundException(Long bookingId) {
+            super("找不到訂票紀錄: " + bookingId, HttpStatus.NOT_FOUND, "BOOKING_001");
+        }
+    }
+
+    public static class BookingCancelledException extends CustomException {
+        public BookingCancelledException(Long bookingId) {
+            super("訂票已取消: " + bookingId, HttpStatus.BAD_REQUEST, "BOOKING_002");
+        }
+    }
+
+    public static class BookingTimeExpiredException extends CustomException {
+        public BookingTimeExpiredException() {
+            super("已超過可訂票時間", HttpStatus.BAD_REQUEST, "BOOKING_003");
+        }
+    }
+
+    // 電子錢包相關異常
+    public static class InsufficientBalanceException extends CustomException {
+        public InsufficientBalanceException() {
+            super("餘額不足", HttpStatus.BAD_REQUEST, "WALLET_001");
+        }
+    }
+
+    public static class WalletNotFoundException extends CustomException {
+        public WalletNotFoundException(Long walletId) {
+            super("找不到錢包: " + walletId, HttpStatus.NOT_FOUND, "WALLET_002");
+        }
+    }
+
+    public static class WalletFreezedException extends CustomException {
+        public WalletFreezedException() {
+            super("錢包已被凍結", HttpStatus.FORBIDDEN, "WALLET_003");
+        }
+    }
+
+    // 優惠相關異常
+    public static class DiscountNotFoundException extends CustomException {
+        public DiscountNotFoundException(Long discountId) {
+            super("找不到優惠: " + discountId, HttpStatus.NOT_FOUND, "DISCOUNT_001");
+        }
+    }
+
+    public static class DiscountExpiredException extends CustomException {
+        public DiscountExpiredException(String discountCode) {
+            super("優惠已過期: " + discountCode, HttpStatus.BAD_REQUEST, "DISCOUNT_002");
+        }
+    }
+
+    public static class DiscountUsedException extends CustomException {
+        public DiscountUsedException(String discountCode) {
+            super("優惠已使用: " + discountCode, HttpStatus.BAD_REQUEST, "DISCOUNT_003");
+        }
+    }
+
+    // 文件相關異常
+    public static class FileUploadException extends CustomException {
+        public FileUploadException(String message) {
+            super(message, HttpStatus.BAD_REQUEST, "FILE_001");
+        }
+    }
+
+    public static class InvalidFileTypeException extends CustomException {
+        public InvalidFileTypeException(String message) {
+            super(message, HttpStatus.BAD_REQUEST, "FILE_002");
+        }
+    }
+
+    // 系統相關異常
+    public static class SystemException extends CustomException {
+        public SystemException(String message) {
+            super(message, HttpStatus.INTERNAL_SERVER_ERROR, "SYS_001");
+        }
+    }
+
+    public static class ValidationException extends CustomException {
+        public ValidationException(String message) {
+            super(message, HttpStatus.BAD_REQUEST, "SYS_002");
+        }
+    }
 }
