@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -119,6 +120,51 @@ public class CitizenCardServiceImpl implements CitizenCardService {
         return citizenCardRepository.findByCardNumber(cardNumber)
                 .map(CitizenCard::isValid)
                 .orElse(false);
+    }
+
+    @Override
+    public boolean needsRenewal(String cardNumber) {
+        return false;
+    }
+
+    @Override
+    public CitizenCard updateHolderInfo(String cardNumber, String holderName) {
+        return null;
+    }
+
+    @Override
+    public CitizenCard reissueCard(String userEmail, String oldCardNumber) {
+        return null;
+    }
+
+    @Override
+    public boolean checkPrivilege(String cardNumber, String privilege) {
+        return false;
+    }
+
+    @Override
+    public CitizenCard updateCardStatus(String cardNumber, CitizenCard.CardStatus status) {
+        return null;
+    }
+
+    @Override
+    public void recordCardUsage(String cardNumber, String usage) {
+
+    }
+
+    @Override
+    public void handleExpiredCards() {
+
+    }
+
+    @Override
+    public boolean validateCardApplicationEligibility(String userEmail, CitizenCard.CardType cardType) {
+        return false;
+    }
+
+    @Override
+    public Map<String, Object> getCardUsageStatistics(String cardNumber) {
+        return Map.of();
     }
 
     // 私有輔助方法
