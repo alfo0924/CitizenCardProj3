@@ -123,4 +123,33 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     @Modifying
     @Query("UPDATE Member m SET m.isDeleted = true WHERE m.memberId = :memberId")
     int softDeleteMember(@Param("memberId") Long memberId);
+
+    /**
+     * 根據多個email查詢會員
+     */
+    List<Member> findByEmailIn(List<String> emails);
+
+    /**
+     * 根據email列表查詢活躍會員
+     */
+    @Query("SELECT m FROM Member m WHERE m.email IN :emails " +
+            "AND m.status = 'ACTIVE' AND m.isDeleted = false")
+    List<Member> findActiveByEmailIn(@Param("emails") List<String> emails);
+
+    /**
+     * 根據email列表查詢並檢查通知設定
+     */
+    @Query("SELECT m FROM Member m WHERE m.email IN :emails " +
+            "AND m.status = 'ACTIVE' " +
+            "AND m.isDeleted = false")
+    List<Member> findNotifiableByEmailIn(@Param("emails") List<String> emails);
+
+    /**
+     * 批量更新會員的最後通知時間
+     */
+    @Modifying
+    @Query("UPDATE Member m SET m.lastNotificationTime = CURRENT_TIMESTAMP " +
+            "WHERE m.email IN :emails")
+    void updateLastNotificationTime(@Param("emails") List<String> emails);
+
 }

@@ -129,22 +129,6 @@ public class Member implements UserDetails {
         ROLE_ADMIN
     }
 
-    // 初始化方法
-    @PrePersist
-    public void prePersist() {
-        if (this.isDeleted == null) {
-            this.isDeleted = false;
-        }
-        if (this.status == null) {
-            this.status = MemberStatus.INACTIVE;
-        }
-        if (this.role == null) {
-            this.role = Role.ROLE_USER;
-        }
-        if (this.failedLoginAttempts == null) {
-            this.failedLoginAttempts = 0;
-        }
-    }
 
     // 業務方法
 
@@ -251,5 +235,54 @@ public class Member implements UserDetails {
     public String toLogString() {
         return String.format("Member{id=%d, email='%s', name='%s', status=%s}",
                 memberId, email, name, status);
+    }
+    /**
+     * 最後通知時間
+     */
+    @Column(name = "last_notification_time")
+    private LocalDateTime lastNotificationTime;
+
+    /**
+     * 通知設定
+     */
+    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private NotificationSettings notificationSettings;
+
+    /**
+     * 更新最後通知時間
+     */
+    public void updateLastNotificationTime() {
+        this.lastNotificationTime = LocalDateTime.now();
+    }
+
+    /**
+     * 檢查是否需要發送通知
+     */
+    public boolean needsNotification(LocalDateTime checkTime) {
+        if (this.lastNotificationTime == null) {
+            return true;
+        }
+        return this.lastNotificationTime.isBefore(checkTime);
+    }
+
+    /**
+     * 獲取通知設定
+     */
+    public NotificationSettings getNotificationSettings() {
+        if (this.notificationSettings == null) {
+            this.notificationSettings = new NotificationSettings();
+            this.notificationSettings.setMember(this);
+        }
+        return this.notificationSettings;
+    }
+
+    // 在prePersist方法中添加初始化
+    @PrePersist
+    public void prePersist() {
+        // ... 其他初始化 ...
+        if (this.notificationSettings == null) {
+            this.notificationSettings = new NotificationSettings();
+            this.notificationSettings.setMember(this);
+        }
     }
 }

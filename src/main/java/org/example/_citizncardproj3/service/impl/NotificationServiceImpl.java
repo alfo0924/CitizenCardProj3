@@ -180,4 +180,24 @@ public class NotificationServiceImpl implements NotificationService {
                 Notification.NotificationPriority.HIGH
         );
     }
+
+    @Override
+    public boolean isNotificationVisible(Long notificationId, String userEmail) {
+        return false;
+    }
+
+    @Override
+    public Page<Notification> getNotificationsByType(String userEmail, Notification.NotificationType type, Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public List<Notification> getNotificationsByPriority(String userEmail, Notification.NotificationPriority priority) {
+        return List.of();
+    }
+
+    @Override
+    public void deleteNotification(String userEmail, Long notificationId) {
+
+    }
 }
