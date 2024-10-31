@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example._citizncardproj3.model.dto.request.MovieCreateRequest;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -11,6 +12,7 @@ import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "city_movies")
@@ -187,13 +189,19 @@ public class CityMovie {
             return false;
         }
         return this.schedules.stream()
-                .anyMatch(schedule -> schedule.isAvailable());
+                .anyMatch(schedule ->
+                        schedule.getStatus() == MovieSchedule.ScheduleStatus.ON_SALE &&
+                                schedule.getAvailableSeats() > 0
+                );
     }
 
     // 獲取可用場次列表
     public List<MovieSchedule> getAvailableSchedules() {
         return this.schedules.stream()
-                .filter(schedule -> schedule.isAvailable())
+                .filter(schedule ->
+                        schedule.getStatus() == MovieSchedule.ScheduleStatus.ON_SALE &&
+                                schedule.getAvailableSeats() > 0
+                )
                 .toList();
     }
 
@@ -210,4 +218,68 @@ public class CityMovie {
         return String.format("CityMovie{id=%d, code='%s', name='%s', status=%s}",
                 movieId, movieCode, movieName, status);
     }
+
+
+    /**
+     * 檢查是否有進行中的場次
+     */
+    public boolean hasActiveSchedules() {
+        if (schedules == null || schedules.isEmpty()) {
+            return false;
+        }
+        return schedules.stream()
+                .anyMatch(schedule -> schedule.getStatus() != MovieSchedule.ScheduleStatus.ENDED &&
+                        schedule.getStatus() != MovieSchedule.ScheduleStatus.CANCELLED);
+    }
+
+
+
+    /**
+     * 電影類別枚舉
+     */
+    public enum MovieCategory {
+        ACTION("動作片"),
+        COMEDY("喜劇片"),
+        DRAMA("劇情片"),
+        HORROR("恐怖片"),
+        ROMANCE("愛情片"),
+        SCIFI("科幻片"),
+        ANIMATION("動畫片"),
+        DOCUMENTARY("紀錄片"),
+        OTHER("其他");
+
+        private final String description;
+
+        MovieCategory(String description) {
+            this.description = description;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
+
+
+
+
+
+    /**
+     * 設置電影類別
+     */
+    public void setCategories(List<MovieCategory> categories) {
+        this.categories = categories.stream()
+                .map(MovieCategory::name)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 獲取電影類別列表
+     */
+    public List<MovieCategory> getMovieCategories() {
+        return this.categories.stream()
+                .map(MovieCategory::valueOf)
+                .collect(Collectors.toList());
+    }
+
+
 }

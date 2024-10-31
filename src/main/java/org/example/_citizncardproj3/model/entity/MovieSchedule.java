@@ -207,4 +207,16 @@ public class MovieSchedule {
         return String.format("MovieSchedule{id=%d, movie='%s', showTime=%s, status=%s, availableSeats=%d}",
                 scheduleId, movie.getMovieName(), showTime, status, availableSeats);
     }
+
+    /**
+     * 檢查場次是否可用
+     */
+    public boolean isAvailable() {
+        LocalDateTime now = LocalDateTime.now();
+        return this.status == ScheduleStatus.ON_SALE &&
+                this.availableSeats > 0 &&
+                now.isBefore(this.showTime) &&
+                !this.isDeleted;
+    }
+
 }

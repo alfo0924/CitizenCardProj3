@@ -239,4 +239,17 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
             @Param("endTime") LocalDateTime endTime
     );
 
+
+    /**
+     * 查詢特定時間範圍的場次
+     */
+    @Query("SELECT ms FROM MovieSchedule ms WHERE ms.movie = :movie " +
+            "AND ms.showTime BETWEEN :startTime AND :endTime " +
+            "ORDER BY ms.showTime ASC")
+    List<MovieSchedule> findByMovieAndShowTimeBetween(
+            @Param("movie") CityMovie movie,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
+
 }

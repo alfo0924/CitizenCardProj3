@@ -118,7 +118,7 @@ CitiznCardproj3/
 │       │
 │       └── response/
 │           ├── MemberResponse.java
-│           ├── MovieResponse.java
+│           ├── movieresponse.java
 │           ├── BookingResponse.java
 │           ├── WalletResponse.java
 │           └── ApiResponse.java

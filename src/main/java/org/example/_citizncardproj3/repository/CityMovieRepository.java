@@ -119,4 +119,10 @@ public interface CityMovieRepository extends JpaRepository<CityMovie, Long> {
     @Modifying
     @Query("UPDATE CityMovie m SET m.isDeleted = true WHERE m.movieId = :movieId")
     int softDeleteMovie(@Param("movieId") Long movieId);
+
+    /**
+     * 檢查電影名稱是否存在
+     */
+    boolean existsByMovieName(String movieName);
+
 }

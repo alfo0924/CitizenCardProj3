@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example._citizncardproj3.model.entity.CityMovie;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -44,7 +45,6 @@ public class MovieResponse {
     private MovieStatistics statistics;
     private String message;
 
-    // 電影狀態枚舉
     public enum MovieStatus {
         COMING_SOON("即將上映"),
         NOW_SHOWING("熱映中"),
@@ -54,6 +54,15 @@ public class MovieResponse {
 
         MovieStatus(String description) {
             this.description = description;
+        }
+
+        public static MovieStatus fromEntityStatus(CityMovie.MovieStatus status) {
+            return switch (status) {
+                case COMING_SOON -> COMING_SOON;
+                case NOW_SHOWING -> NOW_SHOWING;
+                case END_SHOWING -> END_SHOWING;
+                default -> throw new IllegalArgumentException("Unknown movie status: " + status);
+            };
         }
 
         public String getDescription() {
@@ -171,5 +180,35 @@ public class MovieResponse {
         return String.format("Movie{id=%d, name='%s', status=%s, schedules=%d}",
                 movieId, movieName, status,
                 schedules != null ? schedules.size() : 0);
+    }
+    public static MovieResponse fromEntity(CityMovie movie) {
+        return MovieResponse.builder()
+                .movieId(movie.getMovieId())
+                .movieName(movie.getMovieName())
+                .description(movie.getDescription())
+                .releaseDate(movie.getReleaseDate())
+                .endDate(movie.getEndDate())
+                .language(movie.getLanguage())
+                .subtitle(movie.getSubtitle())
+                .director(movie.getDirector())
+                .cast(movie.getCast())
+                .duration(movie.getDuration())
+                .rating(movie.getRating())
+                .posterUrl(movie.getPosterUrl())
+                .status(convertStatus(movie.getStatus()))  // 使用轉換方法
+                .build();
+    }
+
+
+    /**
+     * 狀態轉換方法
+     */
+    private static MovieStatus convertStatus(CityMovie.MovieStatus entityStatus) {
+        return switch (entityStatus) {
+            case COMING_SOON -> MovieStatus.COMING_SOON;
+            case NOW_SHOWING -> MovieStatus.NOW_SHOWING;
+            case END_SHOWING -> MovieStatus.END_SHOWING;
+            default -> throw new IllegalArgumentException("Unknown movie status: " + entityStatus);
+        };
     }
 }

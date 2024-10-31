@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example._citizncardproj3.model.entity.CityMovie;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,6 +13,7 @@ import javax.validation.constraints.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -58,8 +60,7 @@ public class MovieCreateRequest {
     private String rating;
 
     @NotNull(message = "電影類型不能為空")
-    private List<MovieCategory> categories;
-
+    private List<CityMovie.MovieCategory> categories;  // 改用CityMovie.MovieCategory
     @NotNull(message = "基本票價不能為空")
     @Positive(message = "基本票價必須大於0")
     private Double basePrice;
@@ -180,4 +181,11 @@ public class MovieCreateRequest {
                         "releaseDate='%s', endDate='%s', rating='%s'}",
                 movieName, director, releaseDate, endDate, rating);
     }
+
+    public List<String> getCategories() {
+        return categories.stream()
+                .map(CityMovie.MovieCategory::name)
+                .collect(Collectors.toList());
+    }
+
 }

@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -250,7 +251,7 @@ public class CityMovieServiceImpl implements CityMovieService {
                 .duration(movie.getDuration())
                 .rating(movie.getRating())
                 .posterUrl(movie.getPosterUrl())
-                .status(movie.getStatus())
+                .status(MovieResponse.MovieStatus.fromEntityStatus(movie.getStatus()))
                 .build();
     }
 
