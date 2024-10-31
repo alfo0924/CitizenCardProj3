@@ -132,4 +132,55 @@ public interface SeatManagementRepository extends JpaRepository<SeatManagement, 
     @Query("UPDATE SeatManagement sm SET sm.isDeleted = true " +
             "WHERE sm.seatId = :seatId")
     int softDeleteSeat(@Param("seatId") Long seatId);
+
+
+    // 檢查座位是否存在
+    boolean existsByVenueAndSeatRowAndSeatColumn(
+            Venue venue,
+            String seatRow,
+            String seatColumn
+    );
+
+    // 根據場地和座位類型查詢並排序
+    Page<SeatManagement> findByVenueAndSeatTypeOrderBySeatLabelAsc(
+            Venue venue,
+            SeatManagement.SeatType seatType,
+            Pageable pageable
+    );
+
+    // 查詢座位使用率統計
+    @Query("SELECT sm.seatType, " +
+            "COUNT(sm) as totalSeats, " +
+            "SUM(CASE WHEN sm.status = 'AVAILABLE' THEN 1 ELSE 0 END) as availableSeats, " +
+            "(SUM(CASE WHEN sm.status = 'AVAILABLE' THEN 1 ELSE 0 END) * 100.0 / COUNT(sm)) as availabilityRate " +
+            "FROM SeatManagement sm " +
+            "WHERE sm.venue = :venue " +
+            "GROUP BY sm.seatType")
+    List<Object[]> getSeatUtilizationStats(@Param("venue") Venue venue);
+
+    // 查詢需要定期維護的座位
+    @Query("SELECT sm FROM SeatManagement sm " +
+            "WHERE sm.venue = :venue " +
+            "AND sm.lastMaintenanceDate <= :checkDate " +
+            "AND sm.status != 'MAINTENANCE' " +
+            "ORDER BY sm.lastMaintenanceDate ASC")
+    List<SeatManagement> findSeatsNeedingPeriodicMaintenance(
+            @Param("venue") Venue venue,
+            @Param("checkDate") LocalDateTime checkDate
+    );
+
+    // 更新座位區域和價格
+    @Modifying
+    @Query("UPDATE SeatManagement sm SET " +
+            "sm.seatZone = :newZone, " +
+            "sm.priceMultiplier = :priceMultiplier " +
+            "WHERE sm.venue = :venue " +
+            "AND sm.seatRow = :row")
+    int updateSeatZoneAndPrice(
+            @Param("venue") Venue venue,
+            @Param("row") String row,
+            @Param("newZone") String newZone,
+            @Param("priceMultiplier") Double priceMultiplier
+    );
+
 }

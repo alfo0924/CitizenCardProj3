@@ -41,7 +41,7 @@ public class SeatBooking {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private SeatType seatType;
+    private seattype seatType;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -165,23 +165,7 @@ public class SeatBooking {
         this.status = SeatStatus.MAINTENANCE;
     }
 
-    // 計算座位價格
-    public void calculatePrice() {
-        double basePrice = this.schedule.getBasePrice();
-        switch (this.seatType) {
-            case VIP:
-                this.price = basePrice * 1.5; // VIP座位加價50%
-                break;
-            case COUPLE:
-                this.price = basePrice * 1.3; // 情侶座加價30%
-                break;
-            case HANDICAP:
-                this.price = basePrice * 0.8; // 無障礙座位優惠20%
-                break;
-            default:
-                this.price = basePrice;
-        }
-    }
+
 
     // 檢查座位是否可用
     public boolean isAvailable() {
@@ -197,9 +181,9 @@ public class SeatBooking {
 
     // 檢查是否為特殊座位
     public boolean isSpecialSeat() {
-        return this.seatType == SeatType.VIP ||
-                this.seatType == SeatType.COUPLE ||
-                this.seatType == SeatType.HANDICAP;
+        return this.seatType == seattype.VIP ||
+                this.seatType == seattype.COUPLE ||
+                this.seatType == seattype.HANDICAP;
     }
 
     // 用於日誌記錄的方法
@@ -207,4 +191,118 @@ public class SeatBooking {
         return String.format("SeatBooking{id=%d, seat='%s', type=%s, status=%s}",
                 seatBookingId, seatNumber, seatType, status);
     }
+
+    // 新增欄位
+    @Column(name = "lock_expiry_time")
+    private LocalDateTime lockExpiryTime;
+
+    @Column(name = "last_modified_by")
+    private String lastModifiedBy;
+
+    @Column(name = "booking_reference")
+    private String bookingReference;
+
+    // 新增座位類型
+    public enum seattype {
+        REGULAR("一般座位"),
+        VIP("VIP座位"),
+        COUPLE("情侶座"),
+        HANDICAP("無障礙座位"),
+        PREMIUM("豪華座位"),    // 新增豪華座位類型
+        STUDENT("學生座位");    // 新增學生座位類型
+
+        private final String description;
+
+        seattype(String description) {
+            this.description = description;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
+
+// 新增業務方法
+    /**
+     * 暫時鎖定座位
+     * @param duration 鎖定時長(分鐘)
+     */
+    public void temporaryLock(int duration) {
+        if (!isAvailable()) {
+            throw new IllegalStateException("座位無法鎖定");
+        }
+        this.status = SeatStatus.LOCKED;
+        this.lockExpiryTime = LocalDateTime.now().plusMinutes(duration);
+    }
+
+    /**
+     * 檢查鎖定是否過期
+     */
+    public boolean isLockExpired() {
+        return this.status == SeatStatus.LOCKED &&
+                LocalDateTime.now().isAfter(this.lockExpiryTime);
+    }
+
+    /**
+     * 更新座位類型和價格
+     */
+//    @Override
+    public void calculatePrice() {
+        double basePrice = this.schedule.getBasePrice();
+        switch (this.seatType) {
+            case VIP:
+                this.price = basePrice * 1.5;  // VIP座位加價50%
+                break;
+            case COUPLE:
+                this.price = basePrice * 1.3;  // 情侶座加價30%
+                break;
+            case HANDICAP:
+                this.price = basePrice * 0.8;  // 無障礙座位優惠20%
+                break;
+            case PREMIUM:
+                this.price = basePrice * 2.0;  // 豪華座位加價100%
+                break;
+            case STUDENT:
+                this.price = basePrice * 0.7;  // 學生座位優惠30%
+                break;
+            default:
+                this.price = basePrice;
+        }
+
+        // 套用時段加價
+        if (isWeekend() || isPeakHour()) {
+            this.price *= 1.2;  // 旺季加價20%
+        }
+    }
+
+    /**
+     * 檢查是否為週末
+     */
+    private boolean isWeekend() {
+        return this.schedule.getShowTime().getDayOfWeek().getValue() >= 6;
+    }
+
+    /**
+     * 檢查是否為尖峰時段
+     */
+    private boolean isPeakHour() {
+        int hour = this.schedule.getShowTime().getHour();
+        return hour >= 18 && hour <= 22;  // 18:00-22:00為尖峰時段
+    }
+
+    /**
+     * 更新座位資訊
+     */
+    public void updateSeatInfo(String modifiedBy) {
+        this.lastModifiedBy = modifiedBy;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 設置訂位參考編號
+     */
+    public void setBookingReference(String reference) {
+        this.bookingReference = reference;
+    }
+
 }

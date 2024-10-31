@@ -215,4 +215,31 @@ public class SeatManagement {
         return String.format("SeatManagement{id=%d, label='%s', type=%s, status=%s}",
                 seatId, seatLabel, seatType, status);
     }
+
+    /**
+     * 價格倍率
+     */
+    @Column(nullable = false)
+    private Double priceMultiplier = 1.0;
+
+    /**
+     * 獲取座位實際價格
+     * @param basePrice 基本票價
+     * @return 實際價格
+     */
+    public Double calculateActualPrice(Double basePrice) {
+        return basePrice * priceMultiplier;
+    }
+
+    /**
+     * 更新價格倍率
+     * @param newMultiplier 新的價格倍率
+     */
+    public void updatePriceMultiplier(Double newMultiplier) {
+        if (newMultiplier <= 0) {
+            throw new IllegalArgumentException("價格倍率必須大於0");
+        }
+        this.priceMultiplier = newMultiplier;
+    }
+
 }

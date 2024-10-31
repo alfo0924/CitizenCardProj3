@@ -13,7 +13,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.LockModeType;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,7 +88,7 @@ public interface SeatBookingRepository extends JpaRepository<SeatBooking, Long> 
     // 查詢特定類型的座位
     List<SeatBooking> findByScheduleAndSeatType(
             MovieSchedule schedule,
-            SeatBooking.SeatType seatType
+            SeatBooking.seattype seatType
     );
 
     // 查詢連續座位
