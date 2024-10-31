@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -131,6 +132,36 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
             verification.setExpired();
             verificationRepository.save(verification);
         }
+    }
+
+    @Override
+    public boolean validateDocumentNumber(String documentNumber, IdentityVerification.VerificationType type) {
+        return false;
+    }
+
+    @Override
+    public boolean needsReVerification(Long verificationId) {
+        return false;
+    }
+
+    @Override
+    public IdentityVerification getValidVerification(String userEmail, IdentityVerification.VerificationType type) {
+        return null;
+    }
+
+    @Override
+    public void cancelVerification(Long verificationId, String reason) {
+
+    }
+
+    @Override
+    public Map<String, Object> getVerificationStatistics(LocalDateTime startTime, LocalDateTime endTime) {
+        return Map.of();
+    }
+
+    @Override
+    public boolean hasValidVerification(String userEmail, IdentityVerification.VerificationType type) {
+        return false;
     }
 
     // 私有輔助方法

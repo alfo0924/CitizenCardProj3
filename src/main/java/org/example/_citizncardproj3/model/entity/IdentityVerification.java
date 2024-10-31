@@ -177,16 +177,98 @@ public class IdentityVerification {
         return this.verificationTime.plusYears(1).isBefore(LocalDateTime.now());
     }
 
-    // 檢查驗證是否有效
-    public boolean isValid() {
-        return this.status == VerificationStatus.VERIFIED &&
-                !this.isDeleted &&
-                !needsReVerification();
-    }
+
 
     // 用於日誌記錄的方法
     public String toLogString() {
         return String.format("IdentityVerification{id=%d, type=%s, status=%s, document='%s'}",
                 verificationId, verificationType, status, documentNumber);
     }
+
+    // 新增欄位
+    @Column(name = "valid_until")
+    private LocalDateTime validUntil;
+
+    @Column(name = "verification_comment")
+    private String verificationComment;
+
+    @Column(name = "attempt_count")
+    private Integer attemptCount = 0;
+
+    @Column(name = "last_attempt_time")
+    private LocalDateTime lastAttemptTime;
+
+// 新增驗證方法
+    /**
+     * 驗證身份
+     */
+    public void verify(String verifier, boolean approved, String comment) {
+        if (this.status != VerificationStatus.PENDING &&
+                this.status != VerificationStatus.IN_PROGRESS) {
+            throw new IllegalStateException("當前狀態無法進行驗證");
+        }
+
+        this.verifiedBy = verifier;
+        this.verificationTime = LocalDateTime.now();
+        this.verificationComment = comment;
+
+        if (approved) {
+            this.status = VerificationStatus.VERIFIED;
+            this.validUntil = LocalDateTime.now().plusYears(1); // 設定有效期為一年
+        } else {
+            this.status = VerificationStatus.REJECTED;
+            this.rejectionReason = comment;
+            this.validUntil = null;
+        }
+    }
+
+    /**
+     * 記錄驗證嘗試
+     */
+    public void recordAttempt() {
+        this.attemptCount++;
+        this.lastAttemptTime = LocalDateTime.now();
+
+        // 如果嘗試次數超過3次，自動拒絕
+        if (this.attemptCount >= 3) {
+            this.status = VerificationStatus.REJECTED;
+            this.rejectionReason = "驗證嘗試次數過多";
+        }
+    }
+
+    /**
+     * 檢查是否可以重新嘗試
+     */
+    public boolean canRetry() {
+        return this.status == VerificationStatus.REJECTED &&
+                this.attemptCount < 3 &&
+                (this.lastAttemptTime == null ||
+                        this.lastAttemptTime.plusHours(24).isBefore(LocalDateTime.now()));
+    }
+
+    /**
+     * 重置驗證狀態
+     */
+    public void reset() {
+        if (this.status != VerificationStatus.REJECTED) {
+            throw new IllegalStateException("只有被拒絕的驗證可以重置");
+        }
+        this.status = VerificationStatus.PENDING;
+        this.verifiedBy = null;
+        this.verificationTime = null;
+        this.verificationComment = null;
+        this.rejectionReason = null;
+        this.attemptCount = 0;
+        this.lastAttemptTime = null;
+    }
+
+    // 修改isValid方法
+//    @Override
+    public boolean isValid() {
+        return this.status == VerificationStatus.VERIFIED &&
+                !this.isDeleted &&
+                this.validUntil != null &&
+                this.validUntil.isAfter(LocalDateTime.now());
+    }
+
 }
