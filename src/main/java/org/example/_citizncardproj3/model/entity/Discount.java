@@ -87,19 +87,7 @@ public class Discount {
         }
     }
 
-    // 初始化方法
-    @PrePersist
-    public void prePersist() {
-        if (this.isDeleted == null) {
-            this.isDeleted = false;
-        }
-        if (this.isActive == null) {
-            this.isActive = true;
-        }
-        if (this.usageCount == null) {
-            this.usageCount = 0;
-        }
-    }
+
 
     // 業務方法
 
@@ -139,23 +127,6 @@ public class Discount {
         this.usageCount++;
     }
 
-    // 檢查優惠是否有效
-    public boolean isValid() {
-        if (!isActive || isDeleted) {
-            return false;
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(validFrom) || now.isAfter(validUntil)) {
-            return false;
-        }
-
-        if (usageLimit != null && usageCount >= usageLimit) {
-            return false;
-        }
-
-        return true;
-    }
 
     // 停用優惠
     public void deactivate() {
@@ -205,4 +176,115 @@ public class Discount {
         return String.format("Discount{id=%d, code='%s', type=%s, value=%.2f, valid=%s}",
                 discountId, discountCode, discountType, discountValue, isValid());
     }
+
+    // 優惠狀態枚舉
+    public enum DiscountStatus {
+        DRAFT("草稿"),
+        ACTIVE("啟用"),
+        INACTIVE("停用"),
+        EXPIRED("已過期"),
+        DEPLETED("已用完"),
+        CANCELLED("已取消"),
+        SUSPENDED("暫停使用");
+
+        private final String description;
+
+        DiscountStatus(String description) {
+            this.description = description;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
+
+    // 新增欄位
+    @ElementCollection
+    @CollectionTable(name = "discount_membership_levels")
+    private List<String> applicableMembershipLevels;
+
+    @ElementCollection
+    @CollectionTable(name = "discount_movie_categories")
+    private List<String> applicableMovieCategories;
+
+    @ElementCollection
+    @CollectionTable(name = "discount_showtimes")
+    private List<String> applicableShowtimes;
+
+    @Column
+    private Boolean stackable;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DiscountStatus status;
+
+    // 修改初始化方法
+    @PrePersist
+    public void prePersist() {
+        if (this.isDeleted == null) {
+            this.isDeleted = false;
+        }
+        if (this.isActive == null) {
+            this.isActive = true;
+        }
+        if (this.usageCount == null) {
+            this.usageCount = 0;
+        }
+        if (this.status == null) {
+            this.status = DiscountStatus.DRAFT;
+        }
+        if (this.stackable == null) {
+            this.stackable = false;
+        }
+    }
+
+    // 新增業務方法
+    public void updateStatus(DiscountStatus newStatus) {
+        if (this.status == DiscountStatus.CANCELLED) {
+            throw new IllegalStateException("已取消的優惠不能更改狀態");
+        }
+        this.status = newStatus;
+    }
+
+    public boolean isStackable() {
+        return stackable != null && stackable;
+    }
+
+    public boolean isApplicableToMemberLevel(String membershipLevel) {
+        return applicableMembershipLevels == null ||
+                applicableMembershipLevels.isEmpty() ||
+                applicableMembershipLevels.contains(membershipLevel);
+    }
+
+    public boolean isApplicableToMovieCategory(String movieCategory) {
+        return applicableMovieCategories == null ||
+                applicableMovieCategories.isEmpty() ||
+                applicableMovieCategories.contains(movieCategory);
+    }
+
+    public boolean isApplicableToShowtime(String showtime) {
+        return applicableShowtimes == null ||
+                applicableShowtimes.isEmpty() ||
+                applicableShowtimes.contains(showtime);
+    }
+
+    // 修改isValid方法，加入狀態檢查
+
+    public boolean isValid() {
+        if (!isActive || isDeleted || status != DiscountStatus.ACTIVE) {
+            return false;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(validFrom) || now.isAfter(validUntil)) {
+            return false;
+        }
+
+        if (usageLimit != null && usageCount >= usageLimit) {
+            return false;
+        }
+
+        return true;
+    }
+
 }
