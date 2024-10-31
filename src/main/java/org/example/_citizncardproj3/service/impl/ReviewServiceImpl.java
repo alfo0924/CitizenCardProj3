@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -174,5 +175,20 @@ public class ReviewServiceImpl implements ReviewService {
     @Transactional
     public void hideUnpopularReviews(int threshold) {
         reviewRepository.hideUnpopularReviews(threshold);
+    }
+
+    @Override
+    public boolean isReviewEditable(Long reviewId, String userEmail) {
+        return false;
+    }
+
+    @Override
+    public Map<String, Object> getReviewStatistics(Long movieId) {
+        return Map.of();
+    }
+
+    @Override
+    public boolean hasUserReviewed(String userEmail, Long movieId) {
+        return false;
     }
 }

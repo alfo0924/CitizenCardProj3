@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 import javax.persistence.LockModeType;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -132,4 +133,104 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Modifying
     @Query("UPDATE Review r SET r.isDeleted = true WHERE r.reviewId = :reviewId")
     int softDeleteReview(@Param("reviewId") Long reviewId);
+
+// ... 原有的方法保留 ...
+
+    /**
+     * 檢查會員是否已評價過電影
+     */
+    boolean existsByMemberAndMovie(Member member, CityMovie movie);
+
+    /**
+     * 根據狀態查詢評價並按時間排序
+     */
+    Page<Review> findByStatusOrderByReviewTimeDesc(
+            Review.ReviewStatus status,
+            Pageable pageable
+    );
+
+    /**
+     * 獲取評價統計信息
+     */
+    @Query("SELECT new map(" +
+            "COUNT(r) as totalReviews, " +
+            "AVG(r.rating) as averageRating, " +
+            "SUM(CASE WHEN r.rating >= 4 THEN 1 ELSE 0 END) as positiveReviews, " +
+            "SUM(CASE WHEN r.rating <= 2 THEN 1 ELSE 0 END) as negativeReviews) " +
+            "FROM Review r WHERE r.movie.movieId = :movieId " +
+            "AND r.status = 'APPROVED' AND r.isDeleted = false")
+    Map<String, Object> getReviewStatistics(@Param("movieId") Long movieId);
+
+    /**
+     * 查詢用戶最近的評價
+     */
+    @Query("SELECT r FROM Review r WHERE r.member = :member " +
+            "AND r.status = 'APPROVED' " +
+            "ORDER BY r.reviewTime DESC")
+    List<Review> findRecentReviewsByMember(
+            @Param("member") Member member,
+            Pageable pageable
+    );
+
+    /**
+     * 查詢特定評分範圍的評價
+     */
+    @Query("SELECT r FROM Review r WHERE r.movie = :movie " +
+            "AND r.rating BETWEEN :minRating AND :maxRating " +
+            "AND r.status = 'APPROVED' " +
+            "ORDER BY r.reviewTime DESC")
+    List<Review> findReviewsByRatingRange(
+            @Param("movie") CityMovie movie,
+            @Param("minRating") Integer minRating,
+            @Param("maxRating") Integer maxRating,
+            Pageable pageable
+    );
+
+    /**
+     * 更新評價內容和評分
+     */
+    @Modifying
+    @Query("UPDATE Review r SET " +
+            "r.title = :title, " +
+            "r.comment = :comment, " +
+            "r.rating = :rating, " +
+            "r.updatedAt = CURRENT_TIMESTAMP " +
+            "WHERE r.reviewId = :reviewId")
+    int updateReviewContent(
+            @Param("reviewId") Long reviewId,
+            @Param("title") String title,
+            @Param("comment") String comment,
+            @Param("rating") Integer rating
+    );
+
+    /**
+     * 批量更新評價狀態
+     */
+    @Modifying
+    @Query("UPDATE Review r SET r.status = :newStatus " +
+            "WHERE r.reviewId IN :reviewIds")
+    int batchUpdateStatus(
+            @Param("reviewIds") List<Long> reviewIds,
+            @Param("newStatus") Review.ReviewStatus newStatus
+    );
+
+
+    /**
+     * 計算電影平均評分 - 使用movieId
+     */
+    @Query("SELECT AVG(r.rating) FROM Review r " +
+            "WHERE r.movie.movieId = :movieId " +
+            "AND r.status = 'APPROVED' " +
+            "AND r.isDeleted = false")
+    Double calculateAverageRating(@Param("movieId") Long movieId);
+
+    /**
+     * 計算電影平均評分 - 使用Movie實體
+     */
+    @Query("SELECT AVG(r.rating) FROM Review r " +
+            "WHERE r.movie = :movie " +
+            "AND r.status = 'APPROVED' " +
+            "AND r.isDeleted = false")
+    Double calculateAverageRatingByMovie(@Param("movie") CityMovie movie);
+
 }
