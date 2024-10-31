@@ -1,0 +1,4 @@
+package org.example._citizncardproj3.model;
+
+public class CitizenCard {
+}
