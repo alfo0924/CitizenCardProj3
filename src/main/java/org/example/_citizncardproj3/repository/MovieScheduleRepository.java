@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 import javax.persistence.LockModeType;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -133,4 +134,81 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
     @Query("UPDATE MovieSchedule ms SET ms.isDeleted = true " +
             "WHERE ms.scheduleId = :scheduleId")
     int softDeleteSchedule(@Param("scheduleId") Long scheduleId);
+
+
+    /**
+     * 檢查場地在指定時間範圍是否有其他場次
+     */
+    boolean existsByVenueAndShowTimeBetween(
+            Venue venue,
+            LocalDateTime startTime,
+            LocalDateTime endTime
+    );
+
+    /**
+     * 查詢場地在指定時間範圍的所有場次（包含結束時間）
+     */
+    @Query("SELECT ms FROM MovieSchedule ms WHERE ms.venue = :venue " +
+            "AND ((ms.showTime BETWEEN :startTime AND :endTime) OR " +
+            "(ms.endTime BETWEEN :startTime AND :endTime) OR " +
+            "(ms.showTime <= :startTime AND ms.endTime >= :endTime))")
+    List<MovieSchedule> findConflictingSchedules(
+            @Param("venue") Venue venue,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
+
+    /**
+     * 獲取場次詳細統計信息
+     */
+    @Query("SELECT new map(" +
+            "ms.movie.movieName as movieName, " +
+            "ms.venue.venueName as venueName, " +
+            "ms.showTime as showTime, " +
+            "ms.totalSeats as totalSeats, " +
+            "ms.availableSeats as availableSeats, " +
+            "(ms.totalSeats - ms.availableSeats) as soldSeats, " +
+            "((ms.totalSeats - ms.availableSeats) * ms.basePrice) as revenue) " +
+            "FROM MovieSchedule ms WHERE ms.scheduleId = :scheduleId")
+    Map<String, Object> getScheduleStatistics(@Param("scheduleId") Long scheduleId);
+
+    /**
+     * 查詢特定時段的座位使用率
+     */
+    @Query("SELECT new map(" +
+            "ms.scheduleId as scheduleId, " +
+            "ms.movie.movieName as movieName, " +
+            "((ms.totalSeats - ms.availableSeats) * 100.0 / ms.totalSeats) as occupancyRate) " +
+            "FROM MovieSchedule ms " +
+            "WHERE ms.showTime BETWEEN :startTime AND :endTime")
+    List<Map<String, Object>> getSeatsOccupancyRate(
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
+
+    /**
+     * 更新場次座位狀態
+     */
+    @Modifying
+    @Query("UPDATE MovieSchedule ms SET " +
+            "ms.availableSeats = :availableSeats, " +
+            "ms.status = CASE " +
+            "WHEN :availableSeats = 0 THEN 'SOLD_OUT' " +
+            "ELSE ms.status END " +
+            "WHERE ms.scheduleId = :scheduleId")
+    int updateSeatsAndStatus(
+            @Param("scheduleId") Long scheduleId,
+            @Param("availableSeats") Integer availableSeats
+    );
+
+    /**
+     * 查詢需要自動更新狀態的場次
+     */
+    @Query("SELECT ms FROM MovieSchedule ms WHERE " +
+            "(ms.showTime <= :currentTime AND ms.status = 'ON_SALE') OR " +
+            "(ms.endTime <= :currentTime AND ms.status = 'IN_PROGRESS')")
+    List<MovieSchedule> findSchedulesNeedingStatusUpdate(
+            @Param("currentTime") LocalDateTime currentTime
+    );
+
 }

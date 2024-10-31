@@ -155,4 +155,56 @@ public class CustomException extends RuntimeException {
             super(message, HttpStatus.BAD_REQUEST, "SYS_002");
         }
     }
+
+
+    // 場地相關異常
+    public static class VenueNotFoundException extends CustomException {
+        public VenueNotFoundException(Long venueId) {
+            super("找不到場地: " + venueId, HttpStatus.NOT_FOUND, "VENUE_001");
+        }
+    }
+
+    public static class VenueNotAvailableException extends CustomException {
+        public VenueNotAvailableException(String message) {
+            super(message, HttpStatus.CONFLICT, "VENUE_002");
+        }
+    }
+
+    public static class VenueMaintenanceException extends CustomException {
+        public VenueMaintenanceException(Long venueId) {
+            super("場地正在維護中: " + venueId, HttpStatus.CONFLICT, "VENUE_003");
+        }
+    }
+
+    public static class VenueCapacityException extends CustomException {
+        public VenueCapacityException(String message) {
+            super(message, HttpStatus.BAD_REQUEST, "VENUE_004");
+        }
+    }
+
+    // 座位相關異常
+    public static class SeatNotFoundException extends CustomException {
+        public SeatNotFoundException(String seatLabel) {
+            super("找不到座位: " + seatLabel, HttpStatus.NOT_FOUND, "SEAT_001");
+        }
+    }
+
+    public static class SeatMaintenanceException extends CustomException {
+        public SeatMaintenanceException(String seatLabel) {
+            super("座位維護中: " + seatLabel, HttpStatus.CONFLICT, "SEAT_002");
+        }
+    }
+
+    public static class SeatLockedException extends CustomException {
+        public SeatLockedException(String seatLabel) {
+            super("座位已被鎖定: " + seatLabel, HttpStatus.CONFLICT, "SEAT_003");
+        }
+    }
+
+    public static class InvalidSeatConfigurationException extends CustomException {
+        public InvalidSeatConfigurationException(String message) {
+            super(message, HttpStatus.BAD_REQUEST, "SEAT_004");
+        }
+    }
+
 }

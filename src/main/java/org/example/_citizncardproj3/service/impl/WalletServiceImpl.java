@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -189,6 +190,11 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
+    public void unfreezeWallet(String userEmail) {
+
+    }
+
+    @Override
     @Transactional
     public void resetDailyLimit() {
         List<Wallet> wallets = walletRepository.findAll();
@@ -206,6 +212,41 @@ public class WalletServiceImpl implements WalletService {
             wallet.resetMonthlyTransactionAmount();
             walletRepository.save(wallet);
         }
+    }
+
+    @Override
+    public Wallet.WalletStatus checkWalletStatus(String userEmail) {
+        return null;
+    }
+
+    @Override
+    public Wallet updateTransactionLimits(String userEmail, Double dailyLimit, Double monthlyLimit) {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> getWalletDetails(String userEmail) {
+        return Map.of();
+    }
+
+    @Override
+    public boolean checkTransactionLimits(String userEmail, Double amount) {
+        return false;
+    }
+
+    @Override
+    public Integer getPointsBalance(String userEmail) {
+        return 0;
+    }
+
+    @Override
+    public Wallet addPoints(String userEmail, Integer points) {
+        return null;
+    }
+
+    @Override
+    public Wallet usePoints(String userEmail, Integer points) {
+        return null;
     }
 
     // 私有輔助方法

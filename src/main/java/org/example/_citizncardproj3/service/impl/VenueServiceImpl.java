@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -125,6 +126,31 @@ public class VenueServiceImpl implements VenueService {
                 venueRepository.save(venue);
             }
         }
+    }
+
+    @Override
+    public boolean checkVenueAvailability(Long venueId, LocalDateTime startTime, LocalDateTime endTime) {
+        return false;
+    }
+
+    @Override
+    public Venue getVenueDetails(Long venueId) {
+        return null;
+    }
+
+    @Override
+    public Venue updateVenueInfo(Long venueId, String venueName, String address) {
+        return null;
+    }
+
+    @Override
+    public Page<Map<String, Object>> getMaintenanceHistory(Long venueId, Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> getSeatUsageStatistics(Long venueId) {
+        return Map.of();
     }
 
     // 私有輔助方法

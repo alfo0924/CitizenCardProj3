@@ -118,4 +118,68 @@ public interface VenueRepository extends JpaRepository<Venue, Long> {
     @Modifying
     @Query("UPDATE Venue v SET v.isDeleted = true WHERE v.venueId = :venueId")
     int softDeleteVenue(@Param("venueId") Long venueId);
+
+    // 新增檢查場地名稱是否存在的方法
+    boolean existsByVenueName(String venueName);
+
+
+    // 新增查詢特定時段內可用座位數的方法
+    @Query("SELECT v, (v.totalSeats - COUNT(DISTINCT b.seatNumber)) as availableSeats " +
+            "FROM Venue v LEFT JOIN v.schedules s " +
+            "LEFT JOIN s.bookings b " +
+            "WHERE s.showTime BETWEEN :startTime AND :endTime " +
+            "GROUP BY v")
+    List<Object[]> findAvailableSeatsInTimeRange(
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
+
+    // 新增查詢特定時段內座位使用率的方法
+    @Query("SELECT v.venueName, " +
+            "COUNT(DISTINCT b.seatNumber) as bookedSeats, " +
+            "v.totalSeats as totalSeats, " +
+            "(COUNT(DISTINCT b.seatNumber) * 100.0 / v.totalSeats) as occupancyRate " +
+            "FROM Venue v LEFT JOIN v.schedules s " +
+            "LEFT JOIN s.bookings b " +
+            "WHERE s.showTime BETWEEN :startTime AND :endTime " +
+            "GROUP BY v")
+    List<Object[]> getSeatsUtilizationStats(
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
+
+    // 新增查詢維護記錄的方法
+    @Query("SELECT v.venueName, " +
+            "v.lastMaintenanceDate, " +
+            "v.nextMaintenanceDate, " +
+            "v.maintenanceNotes " +
+            "FROM Venue v " +
+            "WHERE v.lastMaintenanceDate IS NOT NULL " +
+            "ORDER BY v.lastMaintenanceDate DESC")
+    Page<Object[]> findMaintenanceHistory(Pageable pageable);
+
+    // 新增查詢即將需要維護的場地
+    @Query("SELECT v FROM Venue v " +
+            "WHERE v.nextMaintenanceDate <= :futureDate " +
+            "AND v.status = 'ACTIVE' " +
+            "ORDER BY v.nextMaintenanceDate ASC")
+    List<Venue> findUpcomingMaintenance(
+            @Param("futureDate") LocalDateTime futureDate
+    );
+
+    // 新增更新場地配置的方法
+    @Modifying
+    @Query("UPDATE Venue v SET " +
+            "v.totalRows = :totalRows, " +
+            "v.totalColumns = :totalColumns, " +
+            "v.totalSeats = :totalSeats, " +
+            "v.updatedAt = CURRENT_TIMESTAMP " +
+            "WHERE v.venueId = :venueId")
+    int updateVenueConfiguration(
+            @Param("venueId") Long venueId,
+            @Param("totalRows") Integer totalRows,
+            @Param("totalColumns") Integer totalColumns,
+            @Param("totalSeats") Integer totalSeats
+    );
+
 }
