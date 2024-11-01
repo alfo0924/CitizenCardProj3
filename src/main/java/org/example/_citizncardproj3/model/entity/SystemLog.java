@@ -105,16 +105,7 @@ public class SystemLog {
         }
     }
 
-    // 初始化方法
-    @PrePersist
-    public void prePersist() {
-        if (this.logTime == null) {
-            this.logTime = LocalDateTime.now();
-        }
-        if (this.level == null) {
-            this.level = LogLevel.INFO;
-        }
-    }
+
 
     // 業務方法
 
@@ -201,5 +192,27 @@ public class SystemLog {
     @Override
     public String toString() {
         return formatLogMessage();
+    }
+    @Column(nullable = false)
+    private Boolean isDeleted = false;  // 添加軟刪除欄位，預設為false
+
+    // 添加getter和setter
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Boolean deleted) {
+        isDeleted = deleted;
+    }
+
+    // 添加初始化方法
+    @PrePersist
+    public void prePersist() {
+        if (this.isDeleted == null) {
+            this.isDeleted = false;
+        }
+        if (this.logTime == null) {
+            this.logTime = LocalDateTime.now();
+        }
     }
 }

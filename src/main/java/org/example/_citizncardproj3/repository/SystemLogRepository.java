@@ -46,11 +46,13 @@ public interface SystemLogRepository extends JpaRepository<SystemLog, Long> {
             @Param("levels") List<SystemLog.LogLevel> levels
     );
 
-    // 查詢錯誤日誌
-    @Query("SELECT sl FROM SystemLog sl WHERE sl.level IN ('ERROR', 'CRITICAL') " +
+    // 修改查詢錯誤日誌的方法
+    @Query("SELECT sl FROM SystemLog sl WHERE sl.level IN (:levels) " +
             "AND sl.logTime >= :startTime ORDER BY sl.logTime DESC")
-    List<SystemLog> findErrorLogs(@Param("startTime") LocalDateTime startTime);
-
+    List<SystemLog> findErrorLogs(
+            @Param("levels") List<SystemLog.LogLevel> levels,
+            @Param("startTime") LocalDateTime startTime
+    );
     // 統計查詢
     @Query("SELECT sl.logType, COUNT(sl) FROM SystemLog sl GROUP BY sl.logType")
     List<Object[]> countByLogType();
@@ -98,18 +100,23 @@ public interface SystemLogRepository extends JpaRepository<SystemLog, Long> {
             @Param("endTime") LocalDateTime endTime
     );
 
-    // 查詢安全相關日誌
-    @Query("SELECT sl FROM SystemLog sl WHERE sl.logType = 'SECURITY' " +
-            "AND sl.level IN ('WARNING', 'ERROR', 'CRITICAL') " +
+    // 修改查詢安全相關日誌的方法
+    @Query("SELECT sl FROM SystemLog sl WHERE sl.logType = :logType " +
+            "AND sl.level IN (:levels) " +
             "ORDER BY sl.logTime DESC")
-    List<SystemLog> findSecurityLogs();
+    List<SystemLog> findSecurityLogs(
+            @Param("logType") SystemLog.LogType logType,
+            @Param("levels") List<SystemLog.LogLevel> levels
+    );
 
-    // 批量清理過期日誌
+    // 修改批量清理過期日誌的方法
     @Modifying
     @Query("DELETE FROM SystemLog sl WHERE sl.logTime < :expiryTime " +
-            "AND sl.level NOT IN ('ERROR', 'CRITICAL')")
-    int deleteExpiredLogs(@Param("expiryTime") LocalDateTime expiryTime);
-
+            "AND sl.level NOT IN (:excludedLevels)")
+    int deleteExpiredLogs(
+            @Param("expiryTime") LocalDateTime expiryTime,
+            @Param("excludedLevels") List<SystemLog.LogLevel> excludedLevels
+    );
     // 使用悲觀鎖查詢
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT sl FROM SystemLog sl WHERE sl.logId = :logId")

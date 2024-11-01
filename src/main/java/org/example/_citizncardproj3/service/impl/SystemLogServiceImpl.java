@@ -111,12 +111,25 @@ public class SystemLogServiceImpl implements SystemLogService {
 
     @Override
     public List<SystemLog> getErrorLogs(LocalDateTime startTime) {
-        return systemLogRepository.findErrorLogs(startTime);
+        // 設定要查詢的錯誤級別
+        List<SystemLog.LogLevel> errorLevels = List.of(
+                SystemLog.LogLevel.ERROR,
+                SystemLog.LogLevel.CRITICAL
+        );
+        return systemLogRepository.findErrorLogs(errorLevels, startTime);
     }
-
     @Override
     public List<SystemLog> getSecurityLogs() {
-        return systemLogRepository.findSecurityLogs();
+        // 設定要查詢的安全日誌級別
+        List<SystemLog.LogLevel> securityLevels = List.of(
+                SystemLog.LogLevel.WARNING,
+                SystemLog.LogLevel.ERROR,
+                SystemLog.LogLevel.CRITICAL
+        );
+        return systemLogRepository.findSecurityLogs(
+                SystemLog.LogType.SECURITY,
+                securityLevels
+        );
     }
 
     @Override
@@ -137,10 +150,16 @@ public class SystemLogServiceImpl implements SystemLogService {
         return systemLogRepository.countByLogType();
     }
 
+
     @Override
     @Transactional
     public void cleanupOldLogs(LocalDateTime expiryTime) {
-        systemLogRepository.deleteExpiredLogs(expiryTime);
+        // 設定不要刪除的重要日誌級別
+        List<SystemLog.LogLevel> excludedLevels = List.of(
+                SystemLog.LogLevel.ERROR,
+                SystemLog.LogLevel.CRITICAL
+        );
+        systemLogRepository.deleteExpiredLogs(expiryTime, excludedLevels);
     }
 
     @Override
