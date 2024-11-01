@@ -129,4 +129,35 @@ public interface WalletService {
      * @param points 點數
      * @return 更新後的錢包
      */
+
+    /**
+     * 查詢錢包餘額（返回WalletResponse）
+     */
+    WalletResponse getWalletBalance(String userEmail);
+
+    /**
+     * 儲值（使用TopUpRequest）
+     */
+    TransactionResponse topUp(String userEmail, TopUpRequest request);
+
+    /**
+     * 轉帳
+     */
+    TransactionResponse transfer(String userEmail, TransferRequest request);
+
+    /**
+     * 查詢交易記錄
+     */
+    Page<TransactionResponse> getTransactions(
+            String userEmail,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            Pageable pageable
+    );
+
+    /**
+     * 查詢單筆交易詳情
+     */
+    TransactionResponse getTransaction(Long transactionId, String userEmail);
+
 }
