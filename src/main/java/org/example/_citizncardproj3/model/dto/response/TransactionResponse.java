@@ -104,7 +104,7 @@ public class TransactionResponse {
                 .balanceAfter(transaction.getBalanceAfter())
                 .status(transaction.getStatus())
                 .description(transaction.getDescription())
-                .paymentMethod(transaction.getPaymentMethod())
+                .paymentMethod(String.valueOf(transaction.getPaymentMethod()))
                 .referenceNumber(transaction.getReferenceNumber())
                 .transactionTime(transaction.getTransactionTime())
                 .completionTime(transaction.getCompletionTime())

@@ -33,6 +33,31 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long transactionId;
 
+
+    @Column(nullable = false)
+    private Double balanceAfter;
+
+    @Column(length = 50)
+    private String sourceType;
+
+    @Column(length = 50)
+    private String sourceId;
+
+    @Column(length = 255)
+    private String sourceDescription;
+
+    @Column
+    private Double originalAmount;
+
+    @Column
+    private Double feeAmount;
+
+    @Column(length = 255)
+    private String failureReason;
+
+    @Column(length = 500)
+    private String additionalInfo;
+
     @Column(unique = true, nullable = false)
     private String transactionNumber;
 
