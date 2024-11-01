@@ -195,4 +195,24 @@ public class ScheduleResponse {
                 totalSeats
         );
     }
+
+
+    private String message;  // 用於錯誤訊息
+
+    // 建構子 - 用於錯誤響應
+    public ScheduleResponse(MovieSchedule schedule, String message) {
+        if (schedule != null) {
+            this.scheduleId = schedule.getScheduleId();
+            this.movieId = schedule.getMovie().getMovieId();
+            this.movieName = schedule.getMovie().getMovieName();
+            this.venueName = schedule.getVenue().getVenueName();
+            this.roomNumber = schedule.getRoomNumber();
+            this.showTime = schedule.getShowTime();
+            this.basePrice = schedule.getBasePrice();
+            this.availableSeats = schedule.getAvailableSeats();
+            this.status = schedule.getStatus();
+        }
+        this.message = message;
+    }
+
 }

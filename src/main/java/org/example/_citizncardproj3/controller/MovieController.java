@@ -10,7 +10,8 @@ import org.example._citizncardproj3.model.dto.request.ScheduleCreateRequest;
 import org.example._citizncardproj3.model.dto.response.ApiResponse;
 import org.example._citizncardproj3.model.dto.response.MovieResponse;
 import org.example._citizncardproj3.model.dto.response.ScheduleResponse;
-import org.example._citizncardproj3.service.MovieService;
+import org.example._citizncardproj3.service.CityMovieService;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -30,7 +31,7 @@ import java.util.List;
 @Tag(name = "電影", description = "電影管理相關API")
 public class MovieController {
 
-    private final MovieService movieService;
+    private final CityMovieService movieService;  // 改為CityMovieService
 
     @Operation(summary = "獲取所有電影")
     @GetMapping("/public")
