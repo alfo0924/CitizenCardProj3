@@ -46,8 +46,11 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     // 查詢需要立即處理的通知
     @Query("SELECT n FROM Notification n WHERE n.member = :member " +
-            "AND n.priority IN ('HIGH', 'URGENT') AND n.isRead = false")
-    List<Notification> findUrgentNotifications(@Param("member") Member member);
+            "AND n.priority IN (:priorities) AND n.isRead = false")
+    List<Notification> findUrgentNotifications(
+            @Param("member") Member member,
+            @Param("priorities") List<Notification.NotificationPriority> priorities
+    );
 
     // 統計查詢
     @Query("SELECT n.type, COUNT(n) FROM Notification n GROUP BY n.type")
