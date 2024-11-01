@@ -1,9 +1,6 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -71,6 +68,7 @@ public class Venue {
     private Boolean isDeleted;
 
     // 場地狀態枚舉
+    @Getter
     public enum VenueStatus {
         ACTIVE("營業中"),
         MAINTENANCE("維護中"),
@@ -83,9 +81,6 @@ public class Venue {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 初始化方法
@@ -213,4 +208,11 @@ public class Venue {
         return String.format("Venue{id=%d, name='%s', status=%s, totalSeats=%d}",
                 venueId, venueName, status, totalSeats);
     }
+
+    // getter and setter
+    @Setter
+    @Getter
+    @Column(name = "maintenance_notes", length = 500)
+    private String maintenanceNotes;
+
 }

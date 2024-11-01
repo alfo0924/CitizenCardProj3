@@ -122,11 +122,12 @@ public interface VenueRepository extends JpaRepository<Venue, Long> {
     // 新增檢查場地名稱是否存在的方法
     boolean existsByVenueName(String venueName);
 
-
-    // 新增查詢特定時段內可用座位數的方法
-    @Query("SELECT v, (v.totalSeats - COUNT(DISTINCT b.seatNumber)) as availableSeats " +
-            "FROM Venue v LEFT JOIN v.schedules s " +
+    // 修改查詢特定時段內可用座位數的方法
+    @Query("SELECT v, (v.totalSeats - COUNT(DISTINCT sb)) as availableSeats " +
+            "FROM Venue v " +
+            "LEFT JOIN v.schedules s " +
             "LEFT JOIN s.bookings b " +
+            "LEFT JOIN b.seatBookings sb " +
             "WHERE s.showTime BETWEEN :startTime AND :endTime " +
             "GROUP BY v")
     List<Object[]> findAvailableSeatsInTimeRange(
@@ -134,20 +135,21 @@ public interface VenueRepository extends JpaRepository<Venue, Long> {
             @Param("endTime") LocalDateTime endTime
     );
 
-    // 新增查詢特定時段內座位使用率的方法
+    // 修改查詢特定時段內座位使用率的方法
     @Query("SELECT v.venueName, " +
-            "COUNT(DISTINCT b.seatNumber) as bookedSeats, " +
+            "COUNT(DISTINCT sb) as bookedSeats, " +
             "v.totalSeats as totalSeats, " +
-            "(COUNT(DISTINCT b.seatNumber) * 100.0 / v.totalSeats) as occupancyRate " +
-            "FROM Venue v LEFT JOIN v.schedules s " +
+            "(COUNT(DISTINCT sb) * 100.0 / v.totalSeats) as occupancyRate " +
+            "FROM Venue v " +
+            "LEFT JOIN v.schedules s " +
             "LEFT JOIN s.bookings b " +
+            "LEFT JOIN b.seatBookings sb " +
             "WHERE s.showTime BETWEEN :startTime AND :endTime " +
             "GROUP BY v")
     List<Object[]> getSeatsUtilizationStats(
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
     );
-
     // 新增查詢維護記錄的方法
     @Query("SELECT v.venueName, " +
             "v.lastMaintenanceDate, " +
