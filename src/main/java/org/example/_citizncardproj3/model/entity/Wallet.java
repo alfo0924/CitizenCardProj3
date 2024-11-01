@@ -1,9 +1,6 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -71,6 +68,7 @@ public class Wallet {
     private Boolean isDeleted;
 
     // 錢包類型枚舉
+    @Getter
     public enum WalletType {
         GENERAL("一般錢包"),
         POINTS("點數錢包"),
@@ -83,12 +81,10 @@ public class Wallet {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 錢包狀態枚舉
+    @Getter
     public enum WalletStatus {
         ACTIVE("正常"),
         FROZEN("凍結"),
@@ -101,9 +97,6 @@ public class Wallet {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 初始化方法

@@ -1,10 +1,15 @@
 package org.example._citizncardproj3.service;
 
+import org.example._citizncardproj3.model.dto.request.TopUpRequest;
+import org.example._citizncardproj3.model.dto.request.TransferRequest;
+import org.example._citizncardproj3.model.dto.response.TransactionResponse;
+import org.example._citizncardproj3.model.dto.response.WalletResponse;
 import org.example._citizncardproj3.model.entity.Transaction;
 import org.example._citizncardproj3.model.entity.Wallet;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 public interface WalletService {
@@ -124,5 +129,4 @@ public interface WalletService {
      * @param points 點數
      * @return 更新後的錢包
      */
-    Wallet usePoints(String userEmail, Integer points);
 }

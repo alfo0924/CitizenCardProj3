@@ -1,13 +1,11 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
+import javax.swing.*;
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,6 +15,19 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Transaction {
+
+
+    @Setter
+    @Getter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
+
+    @Setter
+    @Getter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recipient_id")
+    private Member recipient;  // 用於轉帳交易的接收方
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -77,7 +88,10 @@ public class Transaction {
     @Column(nullable = false)
     private Boolean isDeleted;
 
+
+
     // 交易類型枚舉
+    @Getter
     public enum TransactionType {
         TOP_UP("儲值"),
         PAYMENT("支付"),
@@ -91,9 +105,6 @@ public class Transaction {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 交易狀態枚舉
@@ -117,10 +128,17 @@ public class Transaction {
 
     // 支付方式枚舉
     public enum PaymentMethod {
-        WALLET_BALANCE("錢包餘額"),
         CREDIT_CARD("信用卡"),
-        CONVENIENCE_STORE("超商付款"),
-        BANK_TRANSFER("銀行轉帳");
+        DEBIT_CARD("金融卡"),
+        BANK_TRANSFER("銀行轉帳"),
+        MOBILE_PAYMENT("行動支付"),
+        E_WALLET("電子錢包"),
+        CASH("現金"),
+        LINE_PAY("LINE Pay"),
+        JKO_PAY("街口支付"),
+        APPLE_PAY("Apple Pay"),
+        GOOGLE_PAY("Google Pay"),
+        WALLET_BALANCE("錢包餘額");  // 添加錢包餘額支付方式
 
         private final String description;
 
@@ -130,6 +148,34 @@ public class Transaction {
 
         public String getDescription() {
             return description;
+        }
+
+        public static PaymentMethod fromString(String value) {
+            try {
+                return PaymentMethod.valueOf(value.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("不支援的支付方式: " + value);
+            }
+        }
+
+        public boolean isCardPayment() {
+            return this == CREDIT_CARD || this == DEBIT_CARD;
+        }
+
+        public boolean isMobilePayment() {
+            return this == MOBILE_PAYMENT ||
+                    this == LINE_PAY ||
+                    this == JKO_PAY ||
+                    this == APPLE_PAY ||
+                    this == GOOGLE_PAY;
+        }
+
+        public boolean isWalletPayment() {
+            return this == WALLET_BALANCE || this == E_WALLET;
+        }
+
+        public boolean needsBankCode() {
+            return this == BANK_TRANSFER;
         }
     }
 
@@ -233,4 +279,5 @@ public class Transaction {
         return String.format("Transaction{id=%d, number='%s', type=%s, amount=%.2f, status=%s}",
                 transactionId, transactionNumber, type, amount, status);
     }
+
 }

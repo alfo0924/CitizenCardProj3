@@ -35,7 +35,7 @@ public class Booking {
     private CityMovie movie;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "schedule_id", nullable = false)
+    @JoinColumn(name = "schedule_id", referencedColumnName = "scheduleId", nullable = false)
     private MovieSchedule schedule;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL)
