@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.example._citizncardproj3.model.dto.request.BookingRequest;
 import org.example._citizncardproj3.model.dto.response.ApiResponse;
 import org.example._citizncardproj3.model.dto.response.BookingResponse;
+import org.example._citizncardproj3.model.entity.Booking;
 import org.example._citizncardproj3.service.BookingService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -113,7 +114,7 @@ public class BookingController {
             @Parameter(description = "訂票ID") @PathVariable Long bookingId,
             @Parameter(description = "新狀態") @RequestParam String status) {
         try {
-            bookingService.updateBookingStatus(bookingId, status);
+            bookingService.updateBookingStatus(bookingId, Booking.BookingStatus.valueOf(status));
             return ResponseEntity.ok(new ApiResponse(true, "訂票狀態更新成功"));
         } catch (Exception e) {
             return ResponseEntity

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Map;
 
 public interface BookingService {
 
@@ -107,4 +108,36 @@ public interface BookingService {
      * 檢查並取消過期未支付訂票
      */
     void cancelExpiredBookings();
+
+    /**
+     * 創建訂票
+     */
+    BookingResponse createBooking(BookingRequest request, String userEmail);
+
+    /**
+     * 獲取訂票詳情
+     */
+    BookingResponse getBooking(Long bookingId, String userEmail);
+
+    /**
+     * 獲取用戶所有訂票
+     */
+    Page<BookingResponse> getUserBookings(String userEmail, Pageable pageable);
+
+    /**
+     * 取消訂票
+     */
+    void cancelBooking(Long bookingId, String userEmail);
+
+    /**
+     * 檢查座位可用性
+     */
+    boolean checkSeatsAvailability(Long scheduleId, List<String> seatNumbers);
+
+    /**
+     * 獲取訂票統計
+     */
+    Map<String, Object> getBookingStatistics(String startDate, String endDate);
+
+
 }

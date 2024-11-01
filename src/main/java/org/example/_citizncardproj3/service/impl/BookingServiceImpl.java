@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -189,8 +190,38 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    public Map<String, Object> getBookingStatistics(String startDate, String endDate) {
+        return Map.of();
+    }
+
+    @Override
     public void cancelExpiredBookings() {
 
+    }
+
+    @Override
+    public BookingResponse createBooking(BookingRequest request, String userEmail) {
+        return null;
+    }
+
+    @Override
+    public BookingResponse getBooking(Long bookingId, String userEmail) {
+        return null;
+    }
+
+    @Override
+    public Page<BookingResponse> getUserBookings(String userEmail, Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public void cancelBooking(Long bookingId, String userEmail) {
+
+    }
+
+    @Override
+    public boolean checkSeatsAvailability(Long scheduleId, List<String> seatNumbers) {
+        return false;
     }
 
     // 私有輔助方法
