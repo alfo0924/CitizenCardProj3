@@ -12,6 +12,7 @@ import org.example._citizncardproj3.repository.MemberRepository;
 import org.example._citizncardproj3.repository.WalletRepository;
 import org.example._citizncardproj3.service.AuthService;
 
+import org.example._citizncardproj3.service.EmailService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -49,8 +50,8 @@ public class AuthServiceImpl implements AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .phone(request.getPhone())
-                .status(Member.MemberStatus.PENDING)
-                .role(Member.MemberRole.USER)
+                .status(Member.MemberStatus.PENDING)  // 使用PENDING狀態
+                .role(Member.Role.ROLE_USER)         // 使用ROLE_USER角色
                 .registrationTime(LocalDateTime.now())
                 .build();
 

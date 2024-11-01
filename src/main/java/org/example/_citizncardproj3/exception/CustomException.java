@@ -290,4 +290,22 @@ public class CustomException extends RuntimeException {
         }
     }
 
+    public static class DuplicatePhoneException extends RuntimeException {
+        public DuplicatePhoneException(String phone) {
+            super("手機號碼已被使用: " + phone);
+        }
+    }
+
+    public static class AccountNotActiveException extends RuntimeException {
+        public AccountNotActiveException(String email) {
+            super("帳號尚未啟用: " + email);
+        }
+    }
+
+    public static class InvalidTokenException extends RuntimeException {
+        public InvalidTokenException(String message) {
+            super(message);
+        }
+    }
+
 }

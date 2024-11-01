@@ -1,9 +1,6 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
@@ -51,11 +48,8 @@ public class Member implements UserDetails {
 
     private String avatarUrl;
 
-    @Enumerated(EnumType.STRING)
-    private MemberStatus status;
 
-    @Enumerated(EnumType.STRING)
-    private Role role;
+
 
     private Integer failedLoginAttempts;
 
@@ -89,6 +83,7 @@ public class Member implements UserDetails {
     private Boolean isDeleted;
 
     // 性別枚舉
+    @Getter
     public enum Gender {
         MALE("男"),
         FEMALE("女"),
@@ -100,33 +95,6 @@ public class Member implements UserDetails {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
-    }
-
-    // 會員狀態枚舉
-    public enum MemberStatus {
-        ACTIVE("正常"),
-        INACTIVE("未啟用"),
-        SUSPENDED("已停權"),
-        LOCKED("已鎖定");
-
-        private final String description;
-
-        MemberStatus(String description) {
-            this.description = description;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-    }
-
-    // 角色枚舉
-    public enum Role {
-        ROLE_USER,
-        ROLE_ADMIN
     }
 
 
@@ -276,15 +244,7 @@ public class Member implements UserDetails {
         return this.notificationSettings;
     }
 
-    // 在prePersist方法中添加初始化
-    @PrePersist
-    public void prePersist() {
-        // ... 其他初始化 ...
-        if (this.notificationSettings == null) {
-            this.notificationSettings = new NotificationSettings();
-            this.notificationSettings.setMember(this);
-        }
-    }
+
 
     public static class MemberBuilder {
         public MemberBuilder gender(String genderStr) {
@@ -292,4 +252,143 @@ public class Member implements UserDetails {
             return this;
         }
     }
+
+    /**
+     * 郵件驗證相關欄位
+     */
+    @Column(length = 100)
+    private String verificationToken;
+
+    @Column
+    private LocalDateTime verificationTokenExpiry;
+
+    @Column
+    private LocalDateTime emailVerifiedTime;
+
+    /**
+     * 密碼重設相關欄位
+     */
+    @Column(length = 100)
+    private String resetToken;
+
+    @Column
+    private LocalDateTime resetTokenExpiry;
+
+
+
+    /**
+     *
+     *
+     *
+     * 角色枚舉
+     */
+    public enum MemberRole {
+        USER("一般用戶"),
+        ADMIN("管理員");
+
+        private final String description;
+
+        MemberRole(String description) {
+            this.description = description;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
+
+    /**
+     * 驗證相關方法
+     */
+    public boolean isEmailVerified() {
+        return emailVerifiedTime != null;
+    }
+
+    public void verifyEmail() {
+        this.status = MemberStatus.ACTIVE;
+        this.emailVerifiedTime = LocalDateTime.now();
+        this.verificationToken = null;
+        this.verificationTokenExpiry = null;
+    }
+
+    /**
+     * 密碼重設相關方法
+     */
+    public void setPasswordResetToken(String token) {
+        this.resetToken = token;
+        this.resetTokenExpiry = LocalDateTime.now().plusHours(24);
+    }
+
+    public boolean isPasswordResetTokenValid() {
+        return resetToken != null &&
+                resetTokenExpiry != null &&
+                resetTokenExpiry.isAfter(LocalDateTime.now());
+    }
+
+    /**
+     * 初始化方法
+     */
+    @PrePersist
+    public void prePersist() {
+        if (this.isDeleted == null) {
+            this.isDeleted = false;
+        }
+        if (this.status == null) {
+            this.status = MemberStatus.PENDING;
+        }
+        if (this.role == null) {
+            this.role = Role.ROLE_USER;  // 使用Role枚舉而不是MemberRole
+        }
+        if (this.failedLoginAttempts == null) {
+            this.failedLoginAttempts = 0;
+        }
+        if (this.notificationSettings == null) {
+            this.notificationSettings = new NotificationSettings();
+            this.notificationSettings.setMember(this);
+        }
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MemberStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+
+    // 會員狀態枚舉
+    public enum MemberStatus {
+        PENDING("待驗證"),
+        ACTIVE("正常"),
+        INACTIVE("未啟用"),
+        SUSPENDED("已停權"),
+        LOCKED("已鎖定");
+
+        private final String description;
+
+        MemberStatus(String description) {
+            this.description = description;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
+
+    // 角色枚舉
+    public enum Role {
+        ROLE_USER("一般用戶"),
+        ROLE_ADMIN("管理員");
+
+        private final String description;
+
+        Role(String description) {
+            this.description = description;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
+
 }
