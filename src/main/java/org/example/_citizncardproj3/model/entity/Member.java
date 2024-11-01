@@ -390,5 +390,6 @@ public class Member implements UserDetails {
             return description;
         }
     }
-
+    @Column(nullable = false)
+    private LocalDateTime registrationTime;
 }
