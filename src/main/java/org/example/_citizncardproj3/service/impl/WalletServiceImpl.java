@@ -3,6 +3,10 @@ package org.example._citizncardproj3.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example._citizncardproj3.exception.CustomException;
+import org.example._citizncardproj3.model.dto.request.TopUpRequest;
+import org.example._citizncardproj3.model.dto.request.TransferRequest;
+import org.example._citizncardproj3.model.dto.response.TransactionResponse;
+import org.example._citizncardproj3.model.dto.response.WalletResponse;
 import org.example._citizncardproj3.model.entity.Member;
 import org.example._citizncardproj3.model.entity.Transaction;
 import org.example._citizncardproj3.model.entity.Wallet;
@@ -241,6 +245,31 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public Wallet addPoints(String userEmail, Integer points) {
+        return null;
+    }
+
+    @Override
+    public WalletResponse getWalletBalance(String userEmail) {
+        return null;
+    }
+
+    @Override
+    public TransactionResponse topUp(String userEmail, TopUpRequest request) {
+        return null;
+    }
+
+    @Override
+    public TransactionResponse transfer(String userEmail, TransferRequest request) {
+        return null;
+    }
+
+    @Override
+    public Page<TransactionResponse> getTransactions(String userEmail, LocalDateTime startTime, LocalDateTime endTime, Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public TransactionResponse getTransaction(Long transactionId, String userEmail) {
         return null;
     }
 

@@ -141,7 +141,7 @@ public class DiscountServiceImpl implements DiscountService {
                 .originalAmount(originalAmount)
                 .discountAmount(discountAmount)
                 .finalAmount(finalAmount)
-                .status(DiscountUsage.usagestatus.USED)
+                .status(DiscountUsage.UsageStatus.USED)
                 .usageTime(LocalDateTime.now())
                 .build();
 

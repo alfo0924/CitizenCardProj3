@@ -160,4 +160,5 @@ public interface WalletService {
      */
     TransactionResponse getTransaction(Long transactionId, String userEmail);
 
+    Wallet usePoints(String userEmail, Integer points);
 }

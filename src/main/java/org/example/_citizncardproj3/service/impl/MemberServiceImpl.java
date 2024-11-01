@@ -6,6 +6,8 @@ import org.example._citizncardproj3.exception.CustomException;
 import org.example._citizncardproj3.model.dto.request.LoginRequest;
 import org.example._citizncardproj3.model.dto.request.MemberRegistrationRequest;
 import org.example._citizncardproj3.model.dto.request.MemberUpdateRequest;
+import org.example._citizncardproj3.model.dto.response.BookingResponse;
+import org.example._citizncardproj3.model.dto.response.DiscountUsageResponse;
 import org.example._citizncardproj3.model.dto.response.MemberResponse;
 import org.example._citizncardproj3.model.entity.Member;
 import org.example._citizncardproj3.model.entity.Wallet;
@@ -21,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -144,6 +147,36 @@ public class MemberServiceImpl implements MemberService {
         Member member = memberRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new CustomException.MemberNotFoundException(userEmail));
         return convertToResponse(member);
+    }
+
+    @Override
+    public MemberResponse updateMemberProfile(String userEmail, MemberUpdateRequest request) {
+        return null;
+    }
+
+    @Override
+    public String updateAvatar(String userEmail, MultipartFile file) {
+        return "";
+    }
+
+    @Override
+    public void changePassword(String userEmail, String oldPassword, String newPassword) {
+
+    }
+
+    @Override
+    public Page<BookingResponse> getMemberOrders(String userEmail, Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public Page<DiscountUsageResponse> getDiscountHistory(String userEmail, Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public void blockMember(Long memberId, String reason) {
+
     }
 
     @Override
