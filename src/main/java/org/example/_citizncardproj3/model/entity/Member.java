@@ -337,7 +337,7 @@ public class Member implements UserDetails {
             this.status = MemberStatus.PENDING;
         }
         if (this.role == null) {
-            this.role = Role.ROLE_USER;  // 使用Role枚舉而不是MemberRole
+            this.role = Role.ROLE_USER;
         }
         if (this.failedLoginAttempts == null) {
             this.failedLoginAttempts = 0;
@@ -345,6 +345,9 @@ public class Member implements UserDetails {
         if (this.notificationSettings == null) {
             this.notificationSettings = new NotificationSettings();
             this.notificationSettings.setMember(this);
+        }
+        if (this.registrationTime == null) {
+            this.registrationTime = LocalDateTime.now();
         }
     }
 
@@ -392,4 +395,11 @@ public class Member implements UserDetails {
     }
     @Column(nullable = false)
     private LocalDateTime registrationTime;
+
+    public void setResetToken(String token) {
+        this.resetToken = token;
+        this.resetTokenExpiry = LocalDateTime.now().plusHours(24);
+    }
+
+
 }
