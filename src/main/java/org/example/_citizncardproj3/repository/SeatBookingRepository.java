@@ -40,15 +40,15 @@ public interface SeatBookingRepository extends JpaRepository<SeatBooking, Long> 
             @Param("seatNumbers") List<String> seatNumbers
     );
 
-    // 檢查座位是否可用
+    // 修改座位可用性檢查的狀態引用
     @Query("SELECT CASE WHEN COUNT(sb) > 0 THEN false ELSE true END " +
             "FROM SeatBooking sb WHERE sb.schedule = :schedule " +
-            "AND sb.seatNumber = :seatNumber AND sb.status IN ('BOOKED', 'OCCUPIED')")
+            "AND sb.seatNumber = :seatNumber AND sb.status IN :statuses")
     boolean isSeatAvailable(
             @Param("schedule") MovieSchedule schedule,
-            @Param("seatNumber") String seatNumber
+            @Param("seatNumber") String seatNumber,
+            @Param("statuses") List<SeatBooking.SeatStatus> statuses
     );
-
     // 統計查詢
     @Query("SELECT sb.seatType, COUNT(sb) FROM SeatBooking sb " +
             "WHERE sb.schedule = :schedule GROUP BY sb.seatType")
@@ -91,17 +91,15 @@ public interface SeatBookingRepository extends JpaRepository<SeatBooking, Long> 
             SeatBooking.seattype seatType
     );
 
-    // 查詢連續座位
+    // 修改複雜條件查詢中的狀態引用
     @Query("SELECT sb FROM SeatBooking sb WHERE sb.schedule = :schedule " +
-            "AND sb.seatRow = :row AND sb.status = 'AVAILABLE' " +
-            "AND CAST(sb.seatColumn AS integer) BETWEEN :startCol AND :endCol " +
-            "ORDER BY CAST(sb.seatColumn AS integer)")
-    List<SeatBooking> findConsecutiveSeats(
+            "AND sb.status = :status AND sb.seatNumber IN :seatNumbers")
+    List<SeatBooking> findBookedSeats(
             @Param("schedule") MovieSchedule schedule,
-            @Param("row") String row,
-            @Param("startCol") int startCol,
-            @Param("endCol") int endCol
+            @Param("seatNumbers") List<String> seatNumbers,
+            @Param("status") SeatBooking.SeatStatus status
     );
+
 
     // 查詢特定價格範圍的座位
     List<SeatBooking> findByScheduleAndPriceBetweenAndStatus(
@@ -116,4 +114,7 @@ public interface SeatBookingRepository extends JpaRepository<SeatBooking, Long> 
     @Query("UPDATE SeatBooking sb SET sb.isDeleted = true " +
             "WHERE sb.seatBookingId = :seatBookingId")
     int softDeleteSeatBooking(@Param("seatBookingId") Long seatBookingId);
+
+
+
 }
