@@ -72,11 +72,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "WHERE b.schedule = :schedule AND b.status != 'CANCELLED'")
     List<String> findBookedSeatsBySchedule(@Param("schedule") MovieSchedule schedule);
 
-    // 使用悲觀鎖查詢訂票信息
+    /**
+     * 使用悲觀鎖查詢訂票信息
+     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT b FROM Booking b WHERE b.id = :id")
+    @Query("SELECT b FROM Booking b WHERE b.bookingId = :id")
     Optional<Booking> findByIdWithLock(@Param("id") Long id);
-
     // 統計各狀態的訂票數量
     @Query("SELECT b.status, COUNT(b) FROM Booking b GROUP BY b.status")
     List<Object[]> countBookingsByStatus();
