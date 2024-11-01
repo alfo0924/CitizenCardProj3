@@ -147,9 +147,8 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     /**
      * 批量更新會員的最後通知時間
      */
-    @Modifying
-    @Query("UPDATE Member m SET m.lastNotificationTime = CURRENT_TIMESTAMP " +
-            "WHERE m.email IN :emails")
-    void updateLastNotificationTime(@Param("emails") List<String> emails);
 
+    Optional<Member> findByVerificationToken(String token);
+
+    Optional<Member> findByResetToken(String token);
 }

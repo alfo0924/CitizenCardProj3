@@ -29,12 +29,16 @@ public class CustomException extends RuntimeException {
         }
     }
 
-    public static class TokenExpiredException extends CustomException {
+
+    public static class TokenExpiredException extends RuntimeException {
         public TokenExpiredException() {
-            super("Token已過期，請重新登入", HttpStatus.UNAUTHORIZED, "AUTH_003");
+            super("Token已過期");
+        }
+
+        public TokenExpiredException(String message) {
+            super(message);
         }
     }
-
     // 會員相關異常
     public static class MemberNotFoundException extends CustomException {
         public MemberNotFoundException(String email) {
@@ -303,6 +307,10 @@ public class CustomException extends RuntimeException {
     }
 
     public static class InvalidTokenException extends RuntimeException {
+        public InvalidTokenException() {
+            super("無效的Token");
+        }
+
         public InvalidTokenException(String message) {
             super(message);
         }
