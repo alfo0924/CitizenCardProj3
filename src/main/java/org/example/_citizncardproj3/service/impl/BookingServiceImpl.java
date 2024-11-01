@@ -84,7 +84,7 @@ public class BookingServiceImpl implements BookingService {
                 .totalAmount(totalAmount)
                 .discountAmount(discountAmount)
                 .finalAmount(finalAmount)
-                .paymentMethod(request.getPaymentMethod())
+                .paymentMethod(String.valueOf(request.getPaymentMethod()))
                 .specialRequests(request.getSpecialRequests())
                 .build();
 
@@ -146,6 +146,51 @@ public class BookingServiceImpl implements BookingService {
 
         return bookingRepository.findByMemberOrderByCreatedAtDesc(member, pageable)
                 .map(this::convertToResponse);
+    }
+
+    @Override
+    public boolean isSeatAvailable(Long scheduleId, String seatNumber) {
+        return false;
+    }
+
+    @Override
+    public double calculateTotalAmount(Long scheduleId, int seatCount, String discountCode) {
+        return 0;
+    }
+
+    @Override
+    public boolean processPayment(Long bookingId) {
+        return false;
+    }
+
+    @Override
+    public boolean processRefund(Long bookingId) {
+        return false;
+    }
+
+    @Override
+    public boolean isCancellable(Long bookingId) {
+        return false;
+    }
+
+    @Override
+    public boolean isRefundable(Long bookingId) {
+        return false;
+    }
+
+    @Override
+    public List<String> getBookedSeats(Long scheduleId) {
+        return List.of();
+    }
+
+    @Override
+    public BookingResponse updateBookingStatus(Long bookingId, Booking.BookingStatus status) {
+        return null;
+    }
+
+    @Override
+    public void cancelExpiredBookings() {
+
     }
 
     // 私有輔助方法
@@ -228,8 +273,9 @@ public class BookingServiceImpl implements BookingService {
                 .seatNumbers(booking.getSeatBookings().stream()
                         .map(SeatBooking::getSeatNumber)
                         .toList())
-                .status(booking.getStatus())
-                .paymentStatus(booking.getPaymentStatus())
+                // 修改這裡：使用BookingResponse.BookingStatus的fromEntityStatus方法
+                .status(BookingResponse.BookingStatus.fromEntityStatus(booking.getStatus()))
+                .paymentStatus(BookingResponse.PaymentStatus.fromEntityStatus(booking.getPaymentStatus()))
                 .priceDetails(new BookingResponse.PriceDetails(
                         booking.getTotalAmount(),
                         booking.getDiscountAmount(),

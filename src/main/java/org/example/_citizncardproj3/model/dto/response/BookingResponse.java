@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example._citizncardproj3.model.entity.Booking;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -62,6 +63,21 @@ public class BookingResponse {
             this.description = description;
         }
 
+        public static BookingStatus fromEntityStatus(Booking.BookingStatus status) {
+            switch (status) {
+                case PENDING:
+                    return PENDING;
+                case CONFIRMED:
+                    return CONFIRMED;
+                case COMPLETED:
+                    return COMPLETED;
+                case CANCELLED:
+                    return CANCELLED;
+                default:
+                    throw new IllegalArgumentException("Unknown booking status: " + status);
+            }
+        }
+
         public String getDescription() {
             return description;
         }
@@ -80,11 +96,25 @@ public class BookingResponse {
             this.description = description;
         }
 
+        public static PaymentStatus fromEntityStatus(Booking.PaymentStatus paymentStatus) {
+            switch (paymentStatus) {
+                case UNPAID:
+                    return UNPAID;
+                case PAID:
+                    return PAID;
+                case REFUNDED:
+                    return REFUNDED;
+                case FAILED:
+                    return FAILED;
+                default:
+                    throw new IllegalArgumentException("Unknown payment status: " + paymentStatus);
+            }
+        }
+
         public String getDescription() {
             return description;
         }
     }
-
     // 價格詳情內部類
     @Data
     @Builder
