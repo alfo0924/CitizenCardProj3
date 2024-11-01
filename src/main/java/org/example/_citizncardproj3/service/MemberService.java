@@ -3,9 +3,12 @@ package org.example._citizncardproj3.service;
 import org.example._citizncardproj3.model.dto.request.LoginRequest;
 import org.example._citizncardproj3.model.dto.request.MemberRegistrationRequest;
 import org.example._citizncardproj3.model.dto.request.MemberUpdateRequest;
+import org.example._citizncardproj3.model.dto.response.BookingResponse;
+import org.example._citizncardproj3.model.dto.response.DiscountUsageResponse;
 import org.example._citizncardproj3.model.dto.response.MemberResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -33,12 +36,6 @@ public interface MemberService {
      */
     MemberResponse updateProfile(String userEmail, MemberUpdateRequest request);
 
-    /**
-     * 獲取會員資料
-     * @param userEmail 用戶郵箱
-     * @return 會員資料
-     */
-    MemberResponse getMemberProfile(String userEmail);
 
     /**
      * 重設密碼
@@ -125,4 +122,42 @@ public interface MemberService {
      * @return 是否有權限
      */
     boolean checkPermission(String userEmail, String permission);
+
+    /**
+     * 獲取會員個人資料
+     */
+    MemberResponse getMemberProfile(String userEmail);
+
+    /**
+     * 更新會員資料
+     */
+    MemberResponse updateMemberProfile(String userEmail, MemberUpdateRequest request);
+
+    /**
+     * 更新會員頭像
+     */
+    String updateAvatar(String userEmail, MultipartFile file);
+
+    /**
+     * 更改密碼
+     */
+    void changePassword(String userEmail, String oldPassword, String newPassword);
+
+    /**
+     * 取得會員訂單歷史
+     */
+    Page<BookingResponse> getMemberOrders(String userEmail, Pageable pageable);
+
+    /**
+     * 取得會員優惠使用紀錄
+     */
+    Page<DiscountUsageResponse> getDiscountHistory(String userEmail, Pageable pageable);
+
+
+
+    /**
+     * 封鎖會員（管理員用）
+     */
+    void blockMember(Long memberId, String reason);
+
 }

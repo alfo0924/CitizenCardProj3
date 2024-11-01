@@ -25,7 +25,7 @@ public interface DiscountUsageRepository extends JpaRepository<DiscountUsage, Lo
 
     List<DiscountUsage> findByDiscount(Discount discount);
 
-    List<DiscountUsage> findByStatus(DiscountUsage.UsageStatus status);
+    List<DiscountUsage> findByStatus(DiscountUsage.usagestatus status);
 
     // 分頁查詢
     Page<DiscountUsage> findByMemberOrderByUsageTimeDesc(Member member, Pageable pageable);
@@ -65,7 +65,7 @@ public interface DiscountUsageRepository extends JpaRepository<DiscountUsage, Lo
     @Query("UPDATE DiscountUsage du SET du.status = :newStatus WHERE du.usageId = :usageId")
     int updateUsageStatus(
             @Param("usageId") Long usageId,
-            @Param("newStatus") DiscountUsage.UsageStatus newStatus
+            @Param("newStatus") DiscountUsage.usagestatus newStatus
     );
 
     // 批量操作

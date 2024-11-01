@@ -1,9 +1,7 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.example._citizncardproj3.model.dto.response.DiscountUsageResponse;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -43,6 +41,27 @@ public class DiscountUsage {
     @Column(nullable = false)
     private Double finalAmount;
 
+    @Column(length = 50)
+    private String orderNumber;
+
+    @Column(length = 50)
+    private String orderType;
+
+    @Column(length = 255)
+    private String orderDescription;
+
+    @Column(length = 100)
+    private String usageLocation;
+
+    @Column(length = 100)
+    private String deviceInfo;
+
+    @Column(length = 50)
+    private String operatorId;
+
+    @Column(length = 500)
+    private String additionalInfo;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UsageStatus status;
@@ -66,8 +85,11 @@ public class DiscountUsage {
     private Boolean isDeleted;
 
     // 使用狀態枚舉
+    @Getter
     public enum UsageStatus {
+        PENDING("待使用"),
         USED("已使用"),
+        EXPIRED("已過期"),
         CANCELLED("已取消"),
         REFUNDED("已退款");
 
@@ -92,13 +114,11 @@ public class DiscountUsage {
             this.usageTime = LocalDateTime.now();
         }
         if (this.status == null) {
-            this.status = UsageStatus.USED;
+            this.status = UsageStatus.PENDING;
         }
     }
 
     // 業務方法
-
-    // 使用優惠
     public void applyDiscount() {
         if (!discount.isValid()) {
             throw new IllegalStateException("優惠券無效或已過期");
@@ -109,50 +129,53 @@ public class DiscountUsage {
         this.status = UsageStatus.USED;
         this.usageTime = LocalDateTime.now();
 
-        // 更新優惠券使用次數
         discount.use();
     }
 
-    // 取消使用
-    public void cancel(String reason) {
-        if (this.status != UsageStatus.USED) {
-            throw new IllegalStateException("只有已使用的優惠可以取消");
+    public void use() {
+        if (this.status != UsageStatus.PENDING) {
+            throw new IllegalStateException("優惠券狀態不正確");
         }
+        this.status = UsageStatus.USED;
+        this.usageTime = LocalDateTime.now();
+    }
 
+    public void cancel(String reason) {
+        if (this.status != UsageStatus.USED && this.status != UsageStatus.PENDING) {
+            throw new IllegalStateException("優惠券狀態不正確");
+        }
         this.status = UsageStatus.CANCELLED;
         this.cancelTime = LocalDateTime.now();
         this.cancelReason = reason;
     }
 
-    // 退款處理
     public void refund() {
         if (this.status != UsageStatus.USED) {
             throw new IllegalStateException("只有已使用的優惠可以退款");
         }
-
         this.status = UsageStatus.REFUNDED;
         this.cancelTime = LocalDateTime.now();
         this.cancelReason = "退款處理";
     }
 
-    // 驗證使用資格
+    public void expire() {
+        if (this.status == UsageStatus.PENDING) {
+            this.status = UsageStatus.EXPIRED;
+        }
+    }
+
+    // 驗證方法
     public boolean validateUsage() {
-        // 檢查會員是否符合使用條件
         if (member == null || discount == null) {
             return false;
         }
-
-        // 檢查優惠是否有效
         if (!discount.isValid()) {
             return false;
         }
-
-        // 檢查訂單金額是否符合最低消費
         if (originalAmount < discount.getMinPurchaseAmount()) {
             return false;
         }
 
-        // 檢查會員是否已超過使用次數限制
         long userUsageCount = member.getDiscountUsages().stream()
                 .filter(usage -> usage.getDiscount().equals(discount))
                 .filter(usage -> usage.getStatus() == UsageStatus.USED)
@@ -161,27 +184,56 @@ public class DiscountUsage {
         return discount.getUsageLimit() == null || userUsageCount < discount.getUsageLimit();
     }
 
-    // 計算節省金額
-    public Double getSavedAmount() {
-        return this.discountAmount;
-    }
-
-    // 檢查是否可以取消
     public boolean isCancellable() {
         return this.status == UsageStatus.USED &&
                 this.usageTime.plusHours(24).isAfter(LocalDateTime.now());
     }
 
-    // 檢查是否可以退款
     public boolean isRefundable() {
         return this.status == UsageStatus.USED &&
                 this.booking != null &&
                 this.booking.isRefundable();
     }
 
+    public Double getSavedAmount() {
+        return this.discountAmount;
+    }
+
     // 用於日誌記錄的方法
     public String toLogString() {
         return String.format("DiscountUsage{id=%d, discount='%s', member='%s', amount=%.2f, status=%s}",
                 usageId, discount.getDiscountCode(), member.getEmail(), discountAmount, status);
+    }
+
+    // 轉換為DTO的方法
+    public static DiscountUsageResponse fromEntity(DiscountUsage usage) {
+        Discount discount = usage.getDiscount();
+        return DiscountUsageResponse.builder()
+                .usageId(usage.getUsageId())
+                .discountCode(discount.getDiscountCode())
+                .discountName(discount.getDiscountName())
+                .discountType(discount.getDiscountType())
+                .discountValue(discount.getDiscountValue())
+                .minPurchaseAmount(discount.getMinPurchaseAmount())
+                .maxDiscountAmount(discount.getMaxDiscountAmount())
+                .memberName(usage.getMember().getName())
+                .memberEmail(usage.getMember().getEmail())
+                .originalAmount(usage.getOriginalAmount())
+                .discountedAmount(usage.getDiscountAmount())
+                .finalAmount(usage.getFinalAmount())
+                .orderNumber(usage.getOrderNumber())
+                .orderType(usage.getOrderType())
+                .status(usage.getStatus())
+                .usageTime(usage.getUsageTime())
+                .expiryTime(discount.getValidUntil())
+                .details(DiscountUsageResponse.UsageDetails.builder()
+                        .orderType(usage.getOrderType())
+                        .orderDescription(usage.getOrderDescription())
+                        .usageLocation(usage.getUsageLocation())
+                        .deviceInfo(usage.getDeviceInfo())
+                        .operatorId(usage.getOperatorId())
+                        .additionalInfo(usage.getAdditionalInfo())
+                        .build())
+                .build();
     }
 }
