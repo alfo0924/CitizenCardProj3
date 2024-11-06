@@ -35,7 +35,7 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
 
     // 複雜條件查詢
     @Query("SELECT ms FROM MovieSchedule ms WHERE ms.movie = :movie " +
-            "AND ms.showTime BETWEEN :startTime AND :endTime " +
+            "AND ms.showDate BETWEEN :startTime AND :endTime " +
             "AND ms.status = 'ON_SALE'")
     List<MovieSchedule> findAvailableSchedules(
             @Param("movie") CityMovie movie,
@@ -45,8 +45,8 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
 
     // 查詢特定時間範圍的場次
     @Query("SELECT ms FROM MovieSchedule ms WHERE " +
-            "ms.showTime >= :startTime AND ms.showTime <= :endTime " +
-            "ORDER BY ms.showTime ASC")
+            "ms.showDate >= :startTime AND ms.showDate <= :endTime " +
+            "ORDER BY ms.showDate ASC")
     List<MovieSchedule> findSchedulesInTimeRange(
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
@@ -54,7 +54,7 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
 
     // 查詢座位可用的場次
     @Query("SELECT ms FROM MovieSchedule ms WHERE ms.movie = :movie " +
-            "AND ms.showTime > :currentTime AND ms.availableSeats > 0")
+            "AND ms.showDate > :currentTime AND ms.availableSeats > 0")
     List<MovieSchedule> findSchedulesWithAvailableSeats(
             @Param("movie") CityMovie movie,
             @Param("currentTime") LocalDateTime currentTime
@@ -65,7 +65,7 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
     List<Object[]> countByStatus();
 
     @Query("SELECT COUNT(ms) FROM MovieSchedule ms WHERE ms.venue = :venue " +
-            "AND ms.showTime BETWEEN :startTime AND :endTime")
+            "AND ms.showDate BETWEEN :startTime AND :endTime")
     long countSchedulesByVenue(
             @Param("venue") Venue venue,
             @Param("startTime") LocalDateTime startTime,
@@ -92,7 +92,7 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
     // 批量操作
     @Modifying
     @Query("UPDATE MovieSchedule ms SET ms.status = 'ENDED' " +
-            "WHERE ms.showTime < :currentTime AND ms.status = 'ON_SALE'")
+            "WHERE ms.showDate < :currentTime AND ms.status = 'ON_SALE'")
     int updateEndedSchedules(@Param("currentTime") LocalDateTime currentTime);
 
     // 使用悲觀鎖查詢
@@ -101,8 +101,8 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
     Optional<MovieSchedule> findByIdWithLock(@Param("scheduleId") Long scheduleId);
 
     // 查詢即將開始的場次
-    @Query("SELECT ms FROM MovieSchedule ms WHERE ms.showTime BETWEEN :now AND :future " +
-            "AND ms.status = 'ON_SALE' ORDER BY ms.showTime ASC")
+    @Query("SELECT ms FROM MovieSchedule ms WHERE ms.showDate BETWEEN :now AND :future " +
+            "AND ms.status = 'ON_SALE' ORDER BY ms.showDate ASC")
     List<MovieSchedule> findUpcomingSchedules(
             @Param("now") LocalDateTime now,
             @Param("future") LocalDateTime future
@@ -117,8 +117,8 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
 
     // 查詢特定場地的可用場次
     @Query("SELECT ms FROM MovieSchedule ms WHERE ms.venue = :venue " +
-            "AND ms.showTime > :currentTime AND ms.availableSeats > 0 " +
-            "ORDER BY ms.showTime ASC")
+            "AND ms.showDate > :currentTime AND ms.availableSeats > 0 " +
+            "ORDER BY ms.showDate ASC")
     List<MovieSchedule> findAvailableSchedulesByVenue(
             @Param("venue") Venue venue,
             @Param("currentTime") LocalDateTime currentTime
@@ -131,7 +131,7 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
 
     // 軟刪除
     @Modifying
-    @Query("UPDATE MovieSchedule ms SET ms.isDeleted = true " +
+    @Query("UPDATE MovieSchedule ms SET ms.isCancelled = true " +
             "WHERE ms.scheduleId = :scheduleId")
     int softDeleteSchedule(@Param("scheduleId") Long scheduleId);
 
@@ -149,9 +149,9 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
      * 查詢場地在指定時間範圍的所有場次（包含結束時間）
      */
     @Query("SELECT ms FROM MovieSchedule ms WHERE ms.venue = :venue " +
-            "AND ((ms.showTime BETWEEN :startTime AND :endTime) OR " +
+            "AND ((ms.showDate BETWEEN :startTime AND :endTime) OR " +
             "(ms.endTime BETWEEN :startTime AND :endTime) OR " +
-            "(ms.showTime <= :startTime AND ms.endTime >= :endTime))")
+            "(ms.showDate <= :startTime AND ms.endTime >= :endTime))")
     List<MovieSchedule> findConflictingSchedules(
             @Param("venue") Venue venue,
             @Param("startTime") LocalDateTime startTime,
@@ -164,7 +164,7 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
     @Query("SELECT new map(" +
             "ms.movie.movieName as movieName, " +
             "ms.venue.venueName as venueName, " +
-            "ms.showTime as showTime, " +
+            "ms.showDate as showTime, " +
             "ms.totalSeats as totalSeats, " +
             "ms.availableSeats as availableSeats, " +
             "(ms.totalSeats - ms.availableSeats) as soldSeats, " +
@@ -180,7 +180,7 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
             "ms.movie.movieName as movieName, " +
             "((ms.totalSeats - ms.availableSeats) * 100.0 / ms.totalSeats) as occupancyRate) " +
             "FROM MovieSchedule ms " +
-            "WHERE ms.showTime BETWEEN :startTime AND :endTime")
+            "WHERE ms.showDate BETWEEN :startTime AND :endTime")
     List<Map<String, Object>> getSeatsOccupancyRate(
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
@@ -205,7 +205,7 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
      * 查詢需要自動更新狀態的場次
      */
     @Query("SELECT ms FROM MovieSchedule ms WHERE " +
-            "(ms.showTime <= :currentTime AND ms.status = 'ON_SALE') OR " +
+            "(ms.showDate <= :currentTime AND ms.status = 'ON_SALE') OR " +
             "(ms.endTime <= :currentTime AND ms.status = 'IN_PROGRESS')")
     List<MovieSchedule> findSchedulesNeedingStatusUpdate(
             @Param("currentTime") LocalDateTime currentTime
@@ -216,9 +216,9 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
      * 查詢場地在指定時間範圍的場次
      */
     @Query("SELECT ms FROM MovieSchedule ms WHERE ms.venue = :venue " +
-            "AND ((ms.showTime BETWEEN :startTime AND :endTime) OR " +
+            "AND ((ms.showDate BETWEEN :startTime AND :endTime) OR " +
             "(ms.endTime BETWEEN :startTime AND :endTime) OR " +
-            "(ms.showTime <= :startTime AND ms.endTime >= :endTime))")
+            "(ms.showDate <= :startTime AND ms.endTime >= :endTime))")
     List<MovieSchedule> findByVenueAndShowTimeBetween(
             @Param("venue") Venue venue,
             @Param("startTime") LocalDateTime startTime,
@@ -230,9 +230,9 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
      */
     @Query("SELECT COUNT(ms) > 0 FROM MovieSchedule ms WHERE ms.venue = :venue " +
             "AND ms.status != 'CANCELLED' " +
-            "AND ((ms.showTime BETWEEN :startTime AND :endTime) OR " +
+            "AND ((ms.showDate BETWEEN :startTime AND :endTime) OR " +
             "(ms.endTime BETWEEN :startTime AND :endTime) OR " +
-            "(ms.showTime <= :startTime AND ms.endTime >= :endTime))")
+            "(ms.showDate <= :startTime AND ms.endTime >= :endTime))")
     boolean hasScheduleConflict(
             @Param("venue") Venue venue,
             @Param("startTime") LocalDateTime startTime,
@@ -244,8 +244,8 @@ public interface MovieScheduleRepository extends JpaRepository<MovieSchedule, Lo
      * 查詢特定時間範圍的場次
      */
     @Query("SELECT ms FROM MovieSchedule ms WHERE ms.movie = :movie " +
-            "AND ms.showTime BETWEEN :startTime AND :endTime " +
-            "ORDER BY ms.showTime ASC")
+            "AND ms.showDate BETWEEN :startTime AND :endTime " +
+            "ORDER BY ms.showDate ASC")
     List<MovieSchedule> findByMovieAndShowTimeBetween(
             @Param("movie") CityMovie movie,
             @Param("startTime") LocalDateTime startTime,
