@@ -104,7 +104,6 @@ public class CityMovie {
         MovieStatus(String description) {
             this.description = description;
         }
-
     }
 
     // 初始化方法
@@ -128,8 +127,6 @@ public class CityMovie {
     }
 
     // 業務方法
-
-    // 更新電影狀態
     public void updateStatus() {
         LocalDate now = LocalDate.now();
         if (now.isBefore(releaseDate)) {
@@ -141,19 +138,17 @@ public class CityMovie {
         }
     }
 
-    // 新增場次
     public void addSchedule(MovieSchedule schedule) {
         if (this.status != MovieStatus.NOW_SHOWING) {
             throw new IllegalStateException("只有正在上映的電影可以新增場次");
         }
-        if (schedule.getShowTime().toLocalDate().isAfter(this.endDate)) {
+        if (schedule.getShowDate().isAfter(this.endDate)) {
             throw new IllegalArgumentException("場次時間不能超過電影下檔日期");
         }
         this.schedules.add(schedule);
         schedule.setMovie(this);
     }
 
-    // 取消場次
     public void cancelSchedule(MovieSchedule schedule) {
         if (schedule.hasBookings()) {
             throw new IllegalStateException("已有訂票的場次無法取消");
@@ -161,7 +156,6 @@ public class CityMovie {
         this.schedules.remove(schedule);
     }
 
-    // 更新updateInfo方法，移除basePrice參數
     public void updateInfo(
             @Size(max = 100, message = "電影名稱長度不能超過100個字元")
             String movieName,
@@ -174,7 +168,6 @@ public class CityMovie {
         this.description = description;
     }
 
-    // 延長上映期間
     public void extendShowingPeriod(LocalDate newEndDate) {
         if (newEndDate.isBefore(this.endDate)) {
             throw new IllegalArgumentException("新的下檔日期必須晚於原下檔日期");
@@ -183,14 +176,12 @@ public class CityMovie {
         updateStatus();
     }
 
-    // 檢查是否可以訂票
     public boolean isBookable() {
         return this.status == MovieStatus.NOW_SHOWING &&
                 !this.isDeleted &&
                 hasAvailableSchedules();
     }
 
-    // 檢查是否有可用場次
     private boolean hasAvailableSchedules() {
         if (this.schedules == null || this.schedules.isEmpty()) {
             return false;
@@ -202,26 +193,30 @@ public class CityMovie {
                 );
     }
 
-    // 軟刪除
+    public boolean hasActiveSchedules() {
+        if (this.schedules == null || this.schedules.isEmpty()) {
+            return false;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        return this.schedules.stream()
+                .anyMatch(schedule -> {
+                    LocalDateTime scheduleDateTime = LocalDateTime.of(
+                            schedule.getShowDate(),
+                            schedule.getStartTime()
+                    );
+                    return scheduleDateTime.isAfter(now) &&
+                            !schedule.getIsCancelled();
+                });
+    }
+
     public void softDelete() {
         this.isDeleted = true;
         this.deletedAt = LocalDateTime.now();
     }
 
-    // 用於日誌記錄的方法
     @Override
     public String toString() {
         return String.format("CityMovie{id=%d, code='%s', name='%s', status=%s}",
                 movieId, movieCode, movieName, status);
     }
-
-    public boolean hasActiveSchedules() {
-        if (this.schedules == null || this.schedules.isEmpty()) {
-            return false;
-        }
-        return this.schedules.stream()
-                .anyMatch(schedule -> schedule.getStatus() != MovieSchedule.ScheduleStatus.ENDED &&
-                        schedule.getStatus() != MovieSchedule.ScheduleStatus.CANCELLED);
-    }
-
 }
