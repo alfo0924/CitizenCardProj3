@@ -34,7 +34,7 @@ public class DiscountServiceImpl implements DiscountService {
     @Override
     public Page<Discount> getAllDiscounts(boolean activeOnly, Pageable pageable) {
         if (activeOnly) {
-            return discountRepository.findByIsActiveTrueOrderByValidFromDesc(pageable);
+            return discountRepository.findAllActive(pageable);
         }
         return discountRepository.findAll(pageable);
     }
@@ -43,11 +43,9 @@ public class DiscountServiceImpl implements DiscountService {
     public List<Discount> getValidDiscounts(String userEmail) {
         Member member = memberRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new CustomException.MemberNotFoundException(userEmail));
-
         LocalDateTime now = LocalDateTime.now();
         List<Discount> validDiscounts = discountRepository.findValidDiscounts(now);
 
-        // 過濾掉已達使用上限的優惠
         return validDiscounts.stream()
                 .filter(discount -> isDiscountAvailableForMember(discount, member))
                 .toList();
@@ -69,8 +67,7 @@ public class DiscountServiceImpl implements DiscountService {
                 .validFrom(request.getValidFrom())
                 .validUntil(request.getValidUntil())
                 .usageLimit(request.getUsageLimit())
-                .usageCount(0)
-                .isActive(true)
+                .isDeleted(false)
                 .build();
 
         return discountRepository.save(discount);
@@ -82,16 +79,12 @@ public class DiscountServiceImpl implements DiscountService {
         Discount discount = discountRepository.findById(discountId)
                 .orElseThrow(() -> new CustomException.DiscountNotFoundException(discountId));
 
-        if (!discount.isActive()) {
-            throw new IllegalStateException("無法更新已停用的優惠");
+        if (discount.getIsDeleted()) {
+            throw new IllegalStateException("無法更新已刪除的優惠");
         }
 
         if (request.getValidUntil() != null) {
             discount.extendValidity(request.getValidUntil());
-        }
-
-        if (request.getUsageLimit() != null) {
-            discount.increaseUsageLimit(request.getUsageLimit());
         }
 
         if (request.getDescription() != null) {
@@ -107,13 +100,20 @@ public class DiscountServiceImpl implements DiscountService {
         Discount discount = discountRepository.findById(discountId)
                 .orElseThrow(() -> new CustomException.DiscountNotFoundException(discountId));
 
-        discount.deactivate();
+        // 使用getter方法檢查
+        if (discount.getIsDeleted()) {
+            throw new IllegalStateException("優惠券已被刪除");
+        }
+
+        // 使用setter方法設置
+        discount.setIsDeleted(true);
+        discount.setDeletedAt(LocalDateTime.now());
         discountRepository.save(discount);
     }
 
     @Override
     @Transactional
-    public DiscountUsage useDiscount(String userEmail, String discountCode, Double originalAmount) {
+    public DiscountUsage useDiscount(String userEmail, String discountCode, Double amount) {
         Member member = memberRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new CustomException.MemberNotFoundException(userEmail));
 
@@ -128,28 +128,21 @@ public class DiscountServiceImpl implements DiscountService {
             throw new CustomException.DiscountUsedException(discountCode);
         }
 
-        if (!discount.isApplicable(originalAmount)) {
+        if (!discount.isApplicable(amount)) {
             throw new IllegalStateException("訂單金額未達到優惠使用門檻");
         }
 
-        Double discountAmount = discount.calculateDiscount(originalAmount);
-        Double finalAmount = originalAmount - discountAmount;
+        Double discountAmount = discount.calculateDiscount(amount);
 
         DiscountUsage usage = DiscountUsage.builder()
                 .member(member)
                 .discount(discount)
-                .originalAmount(originalAmount)
-                .discountAmount(discountAmount)
-                .finalAmount(finalAmount)
+                .usageAmount(discountAmount)
                 .status(DiscountUsage.UsageStatus.USED)
                 .usageTime(LocalDateTime.now())
                 .build();
 
-        usage = discountUsageRepository.save(usage);
-        discount.use();
-        discountRepository.save(discount);
-
-        return usage;
+        return discountUsageRepository.save(usage);
     }
 
     @Override
@@ -162,7 +155,7 @@ public class DiscountServiceImpl implements DiscountService {
             throw new IllegalStateException("此優惠使用記錄無法取消");
         }
 
-        usage.cancel("用戶取消使用");
+        usage.cancel();
         discountUsageRepository.save(usage);
     }
 
@@ -246,11 +239,9 @@ public class DiscountServiceImpl implements DiscountService {
         if (request.getValidFrom().isAfter(request.getValidUntil())) {
             throw new IllegalArgumentException("結束時間必須晚於開始時間");
         }
-
         if (request.getMaxDiscountAmount() < 0 || request.getMinPurchaseAmount() < 0) {
             throw new IllegalArgumentException("金額不能為負數");
         }
-
         if (request.getDiscountType() == Discount.DiscountType.PERCENTAGE &&
                 (request.getDiscountValue() <= 0 || request.getDiscountValue() > 100)) {
             throw new IllegalArgumentException("折扣百分比必須在0-100之間");
@@ -258,14 +249,18 @@ public class DiscountServiceImpl implements DiscountService {
     }
 
     private boolean isDiscountAvailableForMember(Discount discount, Member member) {
-        if (!discount.isValid()) {
+        // 使用getter方法檢查
+        if (discount.getIsDeleted() || !discount.isValid()) {
             return false;
         }
 
-        long userUsageCount = discountUsageRepository.countMemberDiscountUsage(member, discount);
-        return discount.getUsageLimit() == null || userUsageCount < discount.getUsageLimit();
-    }
+        // 使用自定義查詢方法
+        long userUsageCount = discountUsageRepository.countByMemberAndDiscountAndStatus(
+                member, discount, DiscountUsage.UsageStatus.USED);
 
+        Integer usageLimit = discount.getUsageLimit();
+        return usageLimit == null || userUsageCount < usageLimit;
+    }
     private String generateDiscountCode() {
         return "DC" + System.currentTimeMillis();
     }

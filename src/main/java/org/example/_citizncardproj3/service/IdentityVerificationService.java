@@ -1,6 +1,7 @@
 package org.example._citizncardproj3.service;
 
 import org.example._citizncardproj3.model.entity.IdentityVerification;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -8,6 +9,18 @@ import java.util.List;
 import java.util.Map;
 
 public interface IdentityVerificationService {
+
+    @Transactional
+    IdentityVerification submitVerification(
+            String userEmail,
+            IdentityVerification.VerificationType type,
+            MultipartFile documentFile);
+
+    @Transactional
+    IdentityVerification processVerification(Long verificationId, boolean approved);
+
+    @Transactional
+    IdentityVerification resubmitVerification(Long verificationId);
 
     /**
      * 提交身份驗證申請

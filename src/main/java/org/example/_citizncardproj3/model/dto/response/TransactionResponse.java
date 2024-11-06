@@ -127,7 +127,7 @@ public class TransactionResponse {
 
     // 檢查交易是否成功
     public boolean isSuccessful() {
-        return status == Transaction.TransactionStatus.COMPLETED;
+        return status == Transaction.TransactionStatus.SUCCESS;
     }
 
     // 檢查交易是否可以取消

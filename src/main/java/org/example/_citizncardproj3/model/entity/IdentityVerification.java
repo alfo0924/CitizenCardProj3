@@ -1,9 +1,6 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -11,7 +8,7 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "identity_verifications")
+@Table(name = "IdentityVerifications")
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,51 +17,34 @@ public class IdentityVerification {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "VerificationID")
     private Long verificationId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "MemberID", nullable = false)
     private Member member;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "VerificationType", nullable = false)
     private VerificationType verificationType;
 
-    @Column(nullable = false)
-    private String documentNumber;
-
-    @Column(length = 500)
-    private String documentUrl;
-
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "VerificationStatus", nullable = false)
     private VerificationStatus status;
 
-    @Column
-    private String verificationCode;
-
-    @Column
+    @Column(name = "VerificationTime")
     private LocalDateTime verificationTime;
 
-    @Column
-    private String verifiedBy;
-
-    @Column
-    private String rejectionReason;
-
-    @Column(length = 500)
-    private String remarks;
-
     @CreationTimestamp
+    @Column(name = "CreatedAt", nullable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Column(name = "UpdatedAt", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(nullable = false)
-    private Boolean isDeleted;
-
     // 驗證類型枚舉
+    @Getter
     public enum VerificationType {
         ID_CARD("身分證"),
         STUDENT_CARD("學生證"),
@@ -78,12 +58,10 @@ public class IdentityVerification {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 驗證狀態枚舉
+    @Getter
     public enum VerificationStatus {
         PENDING("待驗證"),
         IN_PROGRESS("驗證中"),
@@ -97,28 +75,14 @@ public class IdentityVerification {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 初始化方法
     @PrePersist
     public void prePersist() {
-        if (this.isDeleted == null) {
-            this.isDeleted = false;
-        }
         if (this.status == null) {
             this.status = VerificationStatus.PENDING;
         }
-        if (this.verificationCode == null) {
-            this.verificationCode = generateVerificationCode();
-        }
-    }
-
-    // 生成驗證碼
-    private String generateVerificationCode() {
-        return "VER" + System.currentTimeMillis();
     }
 
     // 業務方法
@@ -132,22 +96,20 @@ public class IdentityVerification {
     }
 
     // 驗證通過
-    public void approve(String verifiedBy) {
+    public void approve() {
         if (this.status != VerificationStatus.IN_PROGRESS) {
             throw new IllegalStateException("只有驗證中的狀態可以通過驗證");
         }
         this.status = VerificationStatus.VERIFIED;
         this.verificationTime = LocalDateTime.now();
-        this.verifiedBy = verifiedBy;
     }
 
     // 驗證拒絕
-    public void reject(String reason) {
+    public void reject() {
         if (this.status != VerificationStatus.IN_PROGRESS) {
             throw new IllegalStateException("只有驗證中的狀態可以拒絕驗證");
         }
         this.status = VerificationStatus.REJECTED;
-        this.rejectionReason = reason;
     }
 
     // 設置過期
@@ -155,17 +117,6 @@ public class IdentityVerification {
         if (this.status == VerificationStatus.VERIFIED) {
             this.status = VerificationStatus.EXPIRED;
         }
-    }
-
-    // 更新文件
-    public void updateDocument(String documentNumber, String documentUrl) {
-        if (this.status != VerificationStatus.PENDING &&
-                this.status != VerificationStatus.REJECTED) {
-            throw new IllegalStateException("只有待驗證或已拒絕狀態可以更新文件");
-        }
-        this.documentNumber = documentNumber;
-        this.documentUrl = documentUrl;
-        this.status = VerificationStatus.PENDING;
     }
 
     // 檢查是否需要重新驗證
@@ -177,98 +128,17 @@ public class IdentityVerification {
         return this.verificationTime.plusYears(1).isBefore(LocalDateTime.now());
     }
 
-
-
-    // 用於日誌記錄的方法
-    public String toLogString() {
-        return String.format("IdentityVerification{id=%d, type=%s, status=%s, document='%s'}",
-                verificationId, verificationType, status, documentNumber);
-    }
-
-    // 新增欄位
-    @Column(name = "valid_until")
-    private LocalDateTime validUntil;
-
-    @Column(name = "verification_comment")
-    private String verificationComment;
-
-    @Column(name = "attempt_count")
-    private Integer attemptCount = 0;
-
-    @Column(name = "last_attempt_time")
-    private LocalDateTime lastAttemptTime;
-
-// 新增驗證方法
-    /**
-     * 驗證身份
-     */
-    public void verify(String verifier, boolean approved, String comment) {
-        if (this.status != VerificationStatus.PENDING &&
-                this.status != VerificationStatus.IN_PROGRESS) {
-            throw new IllegalStateException("當前狀態無法進行驗證");
-        }
-
-        this.verifiedBy = verifier;
-        this.verificationTime = LocalDateTime.now();
-        this.verificationComment = comment;
-
-        if (approved) {
-            this.status = VerificationStatus.VERIFIED;
-            this.validUntil = LocalDateTime.now().plusYears(1); // 設定有效期為一年
-        } else {
-            this.status = VerificationStatus.REJECTED;
-            this.rejectionReason = comment;
-            this.validUntil = null;
-        }
-    }
-
-    /**
-     * 記錄驗證嘗試
-     */
-    public void recordAttempt() {
-        this.attemptCount++;
-        this.lastAttemptTime = LocalDateTime.now();
-
-        // 如果嘗試次數超過3次，自動拒絕
-        if (this.attemptCount >= 3) {
-            this.status = VerificationStatus.REJECTED;
-            this.rejectionReason = "驗證嘗試次數過多";
-        }
-    }
-
-    /**
-     * 檢查是否可以重新嘗試
-     */
-    public boolean canRetry() {
-        return this.status == VerificationStatus.REJECTED &&
-                this.attemptCount < 3 &&
-                (this.lastAttemptTime == null ||
-                        this.lastAttemptTime.plusHours(24).isBefore(LocalDateTime.now()));
-    }
-
-    /**
-     * 重置驗證狀態
-     */
-    public void reset() {
-        if (this.status != VerificationStatus.REJECTED) {
-            throw new IllegalStateException("只有被拒絕的驗證可以重置");
-        }
-        this.status = VerificationStatus.PENDING;
-        this.verifiedBy = null;
-        this.verificationTime = null;
-        this.verificationComment = null;
-        this.rejectionReason = null;
-        this.attemptCount = 0;
-        this.lastAttemptTime = null;
-    }
-
-    // 修改isValid方法
-//    @Override
+    // 檢查是否有效
     public boolean isValid() {
         return this.status == VerificationStatus.VERIFIED &&
-                !this.isDeleted &&
-                this.validUntil != null &&
-                this.validUntil.isAfter(LocalDateTime.now());
+                this.verificationTime != null &&
+                this.verificationTime.plusYears(1).isAfter(LocalDateTime.now());
     }
 
+    // 用於日誌記錄的方法
+    @Override
+    public String toString() {
+        return String.format("IdentityVerification{id=%d, type=%s, status=%s}",
+                verificationId, verificationType, status);
+    }
 }

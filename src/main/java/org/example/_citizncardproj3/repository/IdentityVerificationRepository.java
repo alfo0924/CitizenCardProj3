@@ -20,8 +20,6 @@ import java.util.Optional;
 public interface IdentityVerificationRepository extends JpaRepository<IdentityVerification, Long> {
 
     // 基本查詢方法
-    Optional<IdentityVerification> findByVerificationCode(String verificationCode);
-
     List<IdentityVerification> findByMember(Member member);
 
     List<IdentityVerification> findByStatus(IdentityVerification.VerificationStatus status);
@@ -69,12 +67,11 @@ public interface IdentityVerificationRepository extends JpaRepository<IdentityVe
     // 更新操作
     @Modifying
     @Query("UPDATE IdentityVerification v SET v.status = :newStatus, " +
-            "v.verificationTime = CURRENT_TIMESTAMP, v.verifiedBy = :verifier " +
+            "v.verificationTime = CURRENT_TIMESTAMP " +
             "WHERE v.verificationId = :verificationId")
     int updateVerificationStatus(
             @Param("verificationId") Long verificationId,
-            @Param("newStatus") IdentityVerification.VerificationStatus newStatus,
-            @Param("verifier") String verifier
+            @Param("newStatus") IdentityVerification.VerificationStatus newStatus
     );
 
     // 批量操作
@@ -87,9 +84,6 @@ public interface IdentityVerificationRepository extends JpaRepository<IdentityVe
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM IdentityVerification v WHERE v.verificationId = :id")
     Optional<IdentityVerification> findByIdWithLock(@Param("id") Long id);
-
-    // 查詢特定驗證者的記錄
-    List<IdentityVerification> findByVerifiedByOrderByVerificationTimeDesc(String verifiedBy);
 
     // 查詢特定時間範圍內的驗證記錄
     @Query("SELECT v FROM IdentityVerification v WHERE " +
@@ -111,12 +105,16 @@ public interface IdentityVerificationRepository extends JpaRepository<IdentityVe
             "AND v.member = :member ORDER BY v.createdAt DESC")
     List<IdentityVerification> findFailedVerifications(@Param("member") Member member);
 
-    // 查詢特定文件編號的驗證記錄
-    Optional<IdentityVerification> findByDocumentNumber(String documentNumber);
+    // 根據會員和驗證類型查詢特定狀態的驗證
+    Optional<IdentityVerification> findByMemberAndVerificationTypeAndStatus(
+            Member member,
+            IdentityVerification.VerificationType type,
+            IdentityVerification.VerificationStatus status
+    );
 
-    // 軟刪除
-    @Modifying
-    @Query("UPDATE IdentityVerification v SET v.isDeleted = true " +
-            "WHERE v.verificationId = :verificationId")
-    int softDeleteVerification(@Param("verificationId") Long verificationId);
+    // 根據狀態和驗證時間查詢
+    List<IdentityVerification> findByStatusAndVerificationTimeBefore(
+            IdentityVerification.VerificationStatus status,
+            LocalDateTime time
+    );
 }

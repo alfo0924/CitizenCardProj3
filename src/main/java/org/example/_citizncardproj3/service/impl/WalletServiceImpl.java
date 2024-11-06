@@ -92,7 +92,7 @@ public class WalletServiceImpl implements WalletService {
         wallet = walletRepository.save(wallet);
 
         // 完成交易
-        transaction.setStatus(Transaction.TransactionStatus.COMPLETED);
+        transaction.setStatus(Transaction.TransactionStatus.SUCCESS);
         transaction.setCompletionTime(LocalDateTime.now());
         transactionRepository.save(transaction);
 
@@ -144,7 +144,7 @@ public class WalletServiceImpl implements WalletService {
         wallet = walletRepository.save(wallet);
 
         // 完成交易
-        transaction.setStatus(Transaction.TransactionStatus.COMPLETED);
+        transaction.setStatus(Transaction.TransactionStatus.SUCCESS);
         transaction.setCompletionTime(LocalDateTime.now());
         transactionRepository.save(transaction);
 

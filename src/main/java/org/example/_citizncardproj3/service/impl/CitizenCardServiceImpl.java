@@ -50,7 +50,7 @@ public class CitizenCardServiceImpl implements CitizenCardService {
                 .member(member)
                 .holderName(member.getName())
                 .cardType(cardType)
-                .status(CitizenCard.CardStatus.INACTIVE)
+                .cardStatus(CitizenCard.CardStatus.SUSPENDED)
                 .issueDate(LocalDate.now())
                 .expiryDate(calculateExpiryDate(cardType))
                 .build();
@@ -205,15 +205,11 @@ public class CitizenCardServiceImpl implements CitizenCardService {
     private LocalDate calculateExpiryDate(CitizenCard.CardType cardType) {
         LocalDate now = LocalDate.now();
 
-        switch (cardType) {
-            case SENIOR:
-                return now.plusYears(5);  // 敬老卡5年有效期
-            case STUDENT:
-                return now.plusYears(1);  // 學生卡1年有效期
-            case CHARITY:
-                return now.plusYears(3);  // 愛心卡3年有效期
-            default:
-                return now.plusYears(10); // 一般卡10年有效期
-        }
+        return switch (cardType) {
+            case SENIOR -> now.plusYears(5);  // 敬老卡5年有效期
+            case STUDENT -> now.plusYears(1);  // 學生卡1年有效期
+            case CHARITY -> now.plusYears(3);  // 愛心卡3年有效期
+            default -> now.plusYears(10); // 一般卡10年有效期
+        };
     }
 }

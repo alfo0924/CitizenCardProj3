@@ -1,9 +1,6 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -11,7 +8,7 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "seat_management")
+@Table(name = "SeatManagement")
 @Data
 @Builder
 @NoArgsConstructor
@@ -23,7 +20,7 @@ public class SeatManagement {
     private Long seatId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "venue_id", nullable = false)
+    @JoinColumn(name = "VenueId", nullable = false)
     private Venue venue;
 
     @Column(nullable = false)
@@ -70,6 +67,7 @@ public class SeatManagement {
     private Boolean isDeleted;
 
     // 座位類型枚舉
+    @Getter
     public enum SeatType {
         REGULAR("一般座位"),
         VIP("VIP座位"),
@@ -82,12 +80,10 @@ public class SeatManagement {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 座位狀態枚舉
+    @Getter
     public enum SeatStatus {
         AVAILABLE("可用"),
         MAINTENANCE("維護中"),
@@ -100,9 +96,6 @@ public class SeatManagement {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 初始化方法

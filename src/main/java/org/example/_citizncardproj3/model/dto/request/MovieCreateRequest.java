@@ -1,19 +1,13 @@
 package org.example._citizncardproj3.model.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.example._citizncardproj3.model.entity.CityMovie;
+import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -47,8 +41,8 @@ public class MovieCreateRequest {
     @NotBlank(message = "導演不能為空")
     private String director;
 
-    @NotEmpty(message = "演員列表不能為空")
-    private List<String> cast;
+    @NotBlank(message = "演員不能為空")
+    private String cast;
 
     @NotNull(message = "片長不能為空")
     @Positive(message = "片長必須大於0")
@@ -59,36 +53,15 @@ public class MovieCreateRequest {
     @Pattern(regexp = "^(普遍級|保護級|輔導級|限制級)$", message = "分級必須是：普遍級、保護級、輔導級或限制級")
     private String rating;
 
-    @NotNull(message = "電影類型不能為空")
-    private List<CityMovie.MovieCategory> categories;  // 改用CityMovie.MovieCategory
-    @NotNull(message = "基本票價不能為空")
-    @Positive(message = "基本票價必須大於0")
-    private Double basePrice;
+    @NotNull(message = "分類ID不能為空")
+    private Integer categoryId;
+
+    @Min(value = 0, message = "最小年齡限制不能小於0")
+    private Integer minAge;
 
     private MultipartFile posterFile;
 
     private MultipartFile trailerFile;
-
-    // 電影類型枚舉
-    public enum MovieCategory {
-        ACTION("動作片"),
-        COMEDY("喜劇片"),
-        DRAMA("劇情片"),
-        HORROR("恐怖片"),
-        SCIFI("科幻片"),
-        ANIMATION("動畫片"),
-        DOCUMENTARY("紀錄片");
-
-        private final String description;
-
-        MovieCategory(String description) {
-            this.description = description;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-    }
 
     // 場次資訊內部類
     @Data
@@ -117,15 +90,7 @@ public class MovieCreateRequest {
             return false;
         }
 
-        if (!isPriceValid()) {
-            return false;
-        }
-
-        if (!isFileValid()) {
-            return false;
-        }
-
-        return true;
+        return isFileValid();
     }
 
     // 日期驗證
@@ -136,11 +101,6 @@ public class MovieCreateRequest {
 
         // 確保下檔日期在上映日期之後
         return endDate.isAfter(releaseDate);
-    }
-
-    // 價格驗證
-    private boolean isPriceValid() {
-        return basePrice != null && basePrice > 0;
     }
 
     // 文件驗證
@@ -162,9 +122,7 @@ public class MovieCreateRequest {
                 return false;
             }
             // 檢查文件大小（例如：最大50MB）
-            if (trailerFile.getSize() > 50 * 1024 * 1024) {
-                return false;
-            }
+            return trailerFile.getSize() <= 50 * 1024 * 1024;
         }
 
         return true;
@@ -181,11 +139,4 @@ public class MovieCreateRequest {
                         "releaseDate='%s', endDate='%s', rating='%s'}",
                 movieName, director, releaseDate, endDate, rating);
     }
-
-    public List<String> getCategories() {
-        return categories.stream()
-                .map(CityMovie.MovieCategory::name)
-                .collect(Collectors.toList());
-    }
-
 }

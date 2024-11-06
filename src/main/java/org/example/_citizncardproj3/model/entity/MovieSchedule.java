@@ -1,18 +1,17 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Entity
-@Table(name = "movie_schedules")
+@Table(name = "MovieSchedules")
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,59 +20,73 @@ public class MovieSchedule {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ScheduleID")
     private Long scheduleId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "movie_id", nullable = false)
+    @JoinColumn(name = "MovieID", nullable = false)
     private CityMovie movie;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "venue_id", nullable = false)
+    @JoinColumn(name = "VenueID", nullable = false)
     private Venue venue;
 
-    @Column(nullable = false)
-    private String roomNumber;
+    @Column(name = "ShowDate", nullable = false)
+    private LocalDate showDate;
 
-    @Column(nullable = false)
-    private LocalDateTime showTime;
+    @Column(name = "StartTime", nullable = false)
+    private LocalTime startTime;
 
-    @Column(nullable = false)
-    private LocalDateTime endTime;
+    @Column(name = "EndTime", nullable = false)
+    private LocalTime endTime;
 
-    @Column(nullable = false)
+    @Column(name = "BasePrice", nullable = false)
     private Double basePrice;
 
+    @Column(name = "SpecialPrice")
     private Double specialPrice;
 
-    @Column(nullable = false)
+    @Column(name = "TotalSeats", nullable = false)
     private Integer totalSeats;
 
-    @Column(nullable = false)
+    @Column(name = "AvailableSeats", nullable = false)
     private Integer availableSeats;
 
+    @Column(name = "RoomNumber", nullable = false)
+    private String roomNumber;
+
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "Status", nullable = false)
     private ScheduleStatus status;
+
+    @Column(name = "IsCancelled", nullable = false)
+    private Boolean isCancelled;
+
+    @Column(name = "CancellationReason")
+    private String cancellationReason;
+
+    @Column(name = "LastBookingTime")
+    private LocalDateTime lastBookingTime;
+
+    @Column(name = "IsSpecialEvent")
+    private Boolean isSpecialEvent;
+
+    @Column(name = "EventDescription")
+    private String eventDescription;
+
+    @CreationTimestamp
+    @Column(name = "CreatedAt", nullable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "UpdatedAt", nullable = false)
+    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL)
     private List<Booking> bookings;
 
-    private LocalDateTime lastBookingTime;
-
-    private Boolean isSpecialEvent;
-
-    private String eventDescription;
-
-    @CreationTimestamp
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
-
-    @Column(nullable = false)
-    private Boolean isDeleted;
-
     // 場次狀態枚舉
+    @Getter
     public enum ScheduleStatus {
         NOT_STARTED("未開始"),
         ON_SALE("售票中"),
@@ -87,16 +100,13 @@ public class MovieSchedule {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 初始化方法
     @PrePersist
     public void prePersist() {
-        if (this.isDeleted == null) {
-            this.isDeleted = false;
+        if (this.isCancelled == null) {
+            this.isCancelled = false;
         }
         if (this.status == null) {
             this.status = ScheduleStatus.NOT_STARTED;
@@ -106,13 +116,14 @@ public class MovieSchedule {
         }
         if (this.lastBookingTime == null) {
             // 預設最後訂票時間為放映前30分鐘
-            this.lastBookingTime = this.showTime.minusMinutes(30);
+            this.lastBookingTime = LocalDateTime.of(showDate, startTime).minusMinutes(30);
+        }
+        if (this.isSpecialEvent == null) {
+            this.isSpecialEvent = false;
         }
     }
 
     // 業務方法
-
-    // 開始售票
     public void startSale() {
         if (this.status == ScheduleStatus.NOT_STARTED) {
             this.status = ScheduleStatus.ON_SALE;
@@ -121,15 +132,15 @@ public class MovieSchedule {
         }
     }
 
-    // 取消場次
     public void cancel(String reason) {
         if (hasBookings()) {
             throw new IllegalStateException("已有訂票的場次無法取消");
         }
         this.status = ScheduleStatus.CANCELLED;
+        this.isCancelled = true;
+        this.cancellationReason = reason;
     }
 
-    // 更新座位數量
     public void updateAvailableSeats() {
         int bookedSeats = this.bookings.stream()
                 .filter(booking -> booking.getStatus() != Booking.BookingStatus.CANCELLED)
@@ -142,24 +153,16 @@ public class MovieSchedule {
         }
     }
 
-    // 檢查座位是否可用
-    public boolean isSeatAvailable(String seatNumber) {
-        return this.bookings.stream()
-                .filter(booking -> booking.getStatus() != Booking.BookingStatus.CANCELLED)
-                .flatMap(booking -> booking.getSeatBookings().stream())
-                .noneMatch(seatBooking -> seatBooking.getSeatNumber().equals(seatNumber));
-    }
-
-    // 檢查是否可以訂票
     public boolean isBookable() {
         LocalDateTime now = LocalDateTime.now();
+        LocalDateTime showDateTime = LocalDateTime.of(showDate, startTime);
         return this.status == ScheduleStatus.ON_SALE &&
-                !this.isDeleted &&
+                !this.isCancelled &&
                 this.availableSeats > 0 &&
-                now.isBefore(this.lastBookingTime);
+                now.isBefore(this.lastBookingTime) &&
+                now.isBefore(showDateTime);
     }
 
-    // 檢查是否有訂票
     public boolean hasBookings() {
         return this.bookings != null &&
                 !this.bookings.isEmpty() &&
@@ -167,56 +170,23 @@ public class MovieSchedule {
                         .anyMatch(booking -> booking.getStatus() != Booking.BookingStatus.CANCELLED);
     }
 
-    // 計算特殊票價
-    public Double calculateSpecialPrice(Member member) {
-        if (this.specialPrice != null) {
-            return this.specialPrice;
-        }
-
-        // 根據會員類型計算特殊票價
-        if (member.getCitizenCards() != null && !member.getCitizenCards().isEmpty()) {
-            CitizenCard card = member.getCitizenCards().get(0);
-            switch (card.getCardType()) {
-                case SENIOR:
-                    return this.basePrice * 0.5; // 敬老卡半價
-                case STUDENT:
-                    return this.basePrice * 0.8; // 學生卡8折
-                case CHARITY:
-                    return this.basePrice * 0.5; // 愛心卡半價
-                default:
-                    return this.basePrice;
-            }
-        }
-        return this.basePrice;
-    }
-
-    // 更新場次狀態
     public void updateStatus() {
         LocalDateTime now = LocalDateTime.now();
-        if (now.isAfter(this.endTime)) {
+        LocalDateTime showDateTime = LocalDateTime.of(showDate, startTime);
+        LocalDateTime endDateTime = LocalDateTime.of(showDate, endTime);
+
+        if (now.isAfter(endDateTime)) {
             this.status = ScheduleStatus.ENDED;
         } else if (this.availableSeats == 0) {
             this.status = ScheduleStatus.FULL;
-        } else if (now.isAfter(this.showTime) && now.isBefore(this.endTime)) {
+        } else if (now.isAfter(showDateTime) && now.isBefore(endDateTime)) {
             this.status = ScheduleStatus.ON_SALE;
         }
     }
 
-    // 用於日誌記錄的方法
-    public String toLogString() {
-        return String.format("MovieSchedule{id=%d, movie='%s', showTime=%s, status=%s, availableSeats=%d}",
-                scheduleId, movie.getMovieName(), showTime, status, availableSeats);
+    @Override
+    public String toString() {
+        return String.format("MovieSchedule{id=%d, movie='%s', showDate=%s, startTime=%s, status=%s}",
+                scheduleId, movie.getMovieName(), showDate, startTime, status);
     }
-
-    /**
-     * 檢查場次是否可用
-     */
-    public boolean isAvailable() {
-        LocalDateTime now = LocalDateTime.now();
-        return this.status == ScheduleStatus.ON_SALE &&
-                this.availableSeats > 0 &&
-                now.isBefore(this.showTime) &&
-                !this.isDeleted;
-    }
-
 }

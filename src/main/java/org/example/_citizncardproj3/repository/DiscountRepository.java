@@ -21,26 +21,25 @@ public interface DiscountRepository extends JpaRepository<Discount, Long> {
     // 基本查詢方法
     Optional<Discount> findByDiscountCode(String discountCode);
 
-    List<Discount> findByIsActiveTrue();
-
     boolean existsByDiscountCode(String discountCode);
 
     // 分頁查詢
-    Page<Discount> findByIsActiveTrueOrderByValidFromDesc(Pageable pageable);
+    Page<Discount> findByIsDeletedFalseOrderByValidFromDesc(Pageable pageable);
 
-    Page<Discount> findByDiscountTypeAndIsActiveTrue(
+    Page<Discount> findByDiscountTypeAndIsDeletedFalse(
             Discount.DiscountType discountType,
             Pageable pageable
     );
 
     // 有效優惠查詢
-    @Query("SELECT d FROM Discount d WHERE d.isActive = true " +
+    @Query("SELECT d FROM Discount d WHERE d.isDeleted = false " +
             "AND :currentTime BETWEEN d.validFrom AND d.validUntil " +
-            "AND (d.usageLimit IS NULL OR d.usageCount < d.usageLimit)")
+            "AND (d.usageLimit IS NULL OR " +
+            "(SELECT COUNT(u) FROM DiscountUsage u WHERE u.discount = d AND u.status = 'USED') < d.usageLimit)")
     List<Discount> findValidDiscounts(@Param("currentTime") LocalDateTime currentTime);
 
     // 即將到期優惠查詢
-    @Query("SELECT d FROM Discount d WHERE d.isActive = true " +
+    @Query("SELECT d FROM Discount d WHERE d.isDeleted = false " +
             "AND d.validUntil BETWEEN :startTime AND :endTime")
     List<Discount> findExpiringDiscounts(
             @Param("startTime") LocalDateTime startTime,
@@ -48,7 +47,7 @@ public interface DiscountRepository extends JpaRepository<Discount, Long> {
     );
 
     // 特定金額可用優惠查詢
-    @Query("SELECT d FROM Discount d WHERE d.isActive = true " +
+    @Query("SELECT d FROM Discount d WHERE d.isDeleted = false " +
             "AND d.minPurchaseAmount <= :amount " +
             "AND :currentTime BETWEEN d.validFrom AND d.validUntil")
     List<Discount> findApplicableDiscounts(
@@ -57,31 +56,19 @@ public interface DiscountRepository extends JpaRepository<Discount, Long> {
     );
 
     // 統計查詢
-    @Query("SELECT d.discountType, COUNT(d) FROM Discount d GROUP BY d.discountType")
+    @Query("SELECT d.discountType, COUNT(d) FROM Discount d " +
+            "WHERE d.isDeleted = false GROUP BY d.discountType")
     List<Object[]> countByDiscountType();
 
-    @Query("SELECT COUNT(d) FROM Discount d WHERE d.isActive = true " +
+    @Query("SELECT COUNT(d) FROM Discount d WHERE d.isDeleted = false " +
             "AND :currentTime BETWEEN d.validFrom AND d.validUntil")
     long countActiveDiscounts(@Param("currentTime") LocalDateTime currentTime);
 
     // 更新操作
     @Modifying
-    @Query("UPDATE Discount d SET d.isActive = :active WHERE d.discountId = :discountId")
-    int updateDiscountStatus(
-            @Param("discountId") Long discountId,
-            @Param("active") boolean active
-    );
-
-    @Modifying
-    @Query("UPDATE Discount d SET d.usageCount = d.usageCount + 1 " +
+    @Query("UPDATE Discount d SET d.isDeleted = true, d.deletedAt = CURRENT_TIMESTAMP " +
             "WHERE d.discountId = :discountId")
-    int incrementUsageCount(@Param("discountId") Long discountId);
-
-    // 批量操作
-    @Modifying
-    @Query("UPDATE Discount d SET d.isActive = false " +
-            "WHERE d.validUntil < :currentTime AND d.isActive = true")
-    int deactivateExpiredDiscounts(@Param("currentTime") LocalDateTime currentTime);
+    int softDeleteDiscount(@Param("discountId") Long discountId);
 
     // 使用悲觀鎖查詢
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -89,26 +76,33 @@ public interface DiscountRepository extends JpaRepository<Discount, Long> {
     Optional<Discount> findByIdWithLock(@Param("discountId") Long discountId);
 
     // 自定義查詢
-    List<Discount> findByDiscountValueGreaterThanAndIsActiveTrue(Double minValue);
+    List<Discount> findByDiscountValueGreaterThanAndIsDeletedFalse(Double minValue);
 
     List<Discount> findByMaxDiscountAmountLessThanEqual(Double maxAmount);
 
     // 查詢特定時間範圍內的優惠
-    @Query("SELECT d FROM Discount d WHERE " +
-            "(d.validFrom BETWEEN :startTime AND :endTime) OR " +
-            "(d.validUntil BETWEEN :startTime AND :endTime)")
+    @Query("SELECT d FROM Discount d WHERE d.isDeleted = false AND " +
+            "((d.validFrom BETWEEN :startTime AND :endTime) OR " +
+            "(d.validUntil BETWEEN :startTime AND :endTime))")
     List<Discount> findDiscountsInTimeRange(
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
     );
 
     // 查詢使用次數最多的優惠
-    @Query("SELECT d FROM Discount d WHERE d.isActive = true " +
-            "ORDER BY d.usageCount DESC")
+    @Query("SELECT d FROM Discount d WHERE d.isDeleted = false " +
+            "ORDER BY (SELECT COUNT(u) FROM DiscountUsage u WHERE u.discount = d AND u.status = 'USED') DESC")
     List<Discount> findMostUsedDiscounts(Pageable pageable);
 
-    // 軟刪除
-    @Modifying
-    @Query("UPDATE Discount d SET d.isDeleted = true WHERE d.discountId = :discountId")
-    int softDeleteDiscount(@Param("discountId") Long discountId);
+    // 查詢優惠使用次數
+    @Query("SELECT COUNT(u) FROM DiscountUsage u WHERE u.discount.discountId = :discountId " +
+            "AND u.status = 'USED'")
+    long getDiscountUsageCount(@Param("discountId") Long discountId);
+
+
+    @Query("SELECT d FROM Discount d WHERE d.isDeleted = false ORDER BY d.validFrom DESC")
+    Page<Discount> findAllActive(Pageable pageable);
+
+
+
 }

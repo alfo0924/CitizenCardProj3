@@ -93,7 +93,7 @@ public interface SeatBookingRepository extends JpaRepository<SeatBooking, Long> 
 
     // 修改複雜條件查詢中的狀態引用
     @Query("SELECT sb FROM SeatBooking sb WHERE sb.schedule = :schedule " +
-            "AND sb.status = :status AND sb.seatNumber IN :seatNumbers")
+            "AND sb.status = :status AND sb.seat IN :seatNumbers")
     List<SeatBooking> findBookedSeats(
             @Param("schedule") MovieSchedule schedule,
             @Param("seatNumbers") List<String> seatNumbers,

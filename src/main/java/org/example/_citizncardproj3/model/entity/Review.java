@@ -1,9 +1,6 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -23,11 +20,11 @@ public class Review {
     private Long reviewId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "MemberId", nullable = false)
     private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "movie_id", nullable = false)
+    @JoinColumn(name = "MovieID", nullable = false)
     private CityMovie movie;
 
     @Column(nullable = false)
@@ -74,6 +71,7 @@ public class Review {
     private Boolean isDeleted;
 
     // 評價狀態枚舉
+    @Getter
     public enum ReviewStatus {
         PENDING("待審核"),
         APPROVED("已通過"),
@@ -86,9 +84,6 @@ public class Review {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 初始化方法

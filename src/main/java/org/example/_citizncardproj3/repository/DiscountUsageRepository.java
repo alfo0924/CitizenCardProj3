@@ -53,7 +53,7 @@ public interface DiscountUsageRepository extends JpaRepository<DiscountUsage, Lo
     @Query("SELECT du.status, COUNT(du) FROM DiscountUsage du GROUP BY du.status")
     List<Object[]> countByStatus();
 
-    @Query("SELECT SUM(du.discountAmount) FROM DiscountUsage du WHERE du.status = 'USED' " +
+    @Query("SELECT SUM(du.usageAmount) FROM DiscountUsage du WHERE du.status = 'USED' " +
             "AND du.usageTime BETWEEN :startTime AND :endTime")
     Double calculateTotalDiscountAmount(
             @Param("startTime") LocalDateTime startTime,
@@ -80,7 +80,7 @@ public interface DiscountUsageRepository extends JpaRepository<DiscountUsage, Lo
     Optional<DiscountUsage> findByIdWithLock(@Param("usageId") Long usageId);
 
     // 查詢特定金額範圍的使用記錄
-    List<DiscountUsage> findByDiscountAmountBetween(Double minAmount, Double maxAmount);
+    List<DiscountUsage> findByUsageAmountBetween(Double minAmount, Double maxAmount);
 
     // 查詢最近的使用記錄
     @Query("SELECT du FROM DiscountUsage du WHERE du.member = :member " +
@@ -97,7 +97,7 @@ public interface DiscountUsageRepository extends JpaRepository<DiscountUsage, Lo
     List<Object[]> findMostUsedDiscounts(Pageable pageable);
 
     // 查詢會員優惠使用統計
-    @Query("SELECT du.member, COUNT(du) as useCount, SUM(du.discountAmount) as totalAmount " +
+    @Query("SELECT du.member, COUNT(du) as useCount, SUM(du.usageAmount) as totalAmount " +
             "FROM DiscountUsage du WHERE du.status = 'USED' GROUP BY du.member")
     List<Object[]> getMemberUsageStatistics();
 
@@ -108,8 +108,10 @@ public interface DiscountUsageRepository extends JpaRepository<DiscountUsage, Lo
             @Param("refundableTime") LocalDateTime refundableTime
     );
 
-    // 軟刪除
-    @Modifying
-    @Query("UPDATE DiscountUsage du SET du.isDeleted = true WHERE du.usageId = :usageId")
-    int softDeleteUsage(@Param("usageId") Long usageId);
+    // 計數查詢
+    long countByMemberAndDiscountAndStatus(
+            Member member,
+            Discount discount,
+            DiscountUsage.UsageStatus status
+    );
 }

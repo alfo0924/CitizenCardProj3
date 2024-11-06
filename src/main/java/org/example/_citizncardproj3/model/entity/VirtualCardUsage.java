@@ -1,9 +1,6 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -11,7 +8,7 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "virtual_card_usages")
+@Table(name = "VirtualCardUsages")
 @Data
 @Builder
 @NoArgsConstructor
@@ -23,7 +20,7 @@ public class VirtualCardUsage {
     private Long usageId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "virtual_card_id", nullable = false)
+    @JoinColumn(name = "VirtualCardID", nullable = false)
     private VirtualCard virtualCard;
 
     /**
@@ -105,6 +102,7 @@ public class VirtualCardUsage {
     /**
      * 使用類型枚舉
      */
+    @Getter
     public enum UsageType {
         PAYMENT("支付"),
         IDENTITY_VERIFICATION("身份驗證"),
@@ -122,14 +120,12 @@ public class VirtualCardUsage {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     /**
      * 使用狀態枚舉
      */
+    @Getter
     public enum UsageStatus {
         SUCCESS("成功"),
         FAILED("失敗"),
@@ -144,9 +140,6 @@ public class VirtualCardUsage {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     /**

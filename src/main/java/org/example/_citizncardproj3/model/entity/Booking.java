@@ -1,18 +1,16 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "bookings")
+@Table(name = "Bookings")
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,74 +19,89 @@ public class Booking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "BookingID")
     private Long bookingId;
 
-    @Column(unique = true, nullable = false)
+    @Column(name = "BookingNumber", unique = true, nullable = false, length = 20)
     private String bookingNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "MemberID", nullable = false)
     private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "movie_id", nullable = false)
-    private CityMovie movie;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "schedule_id", referencedColumnName = "scheduleId", nullable = false)
+    @JoinColumn(name = "ScheduleID", nullable = false)
     private MovieSchedule schedule;
+
+    @Column(name = "TotalAmount", nullable = false, precision = 10, scale = 2)
+    private BigDecimal totalAmount;
+
+    @Column(name = "DiscountApplied", precision = 10, scale = 2)
+    private BigDecimal discountApplied;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "PaymentStatus", nullable = false, length = 20)
+    private PaymentStatus paymentStatus;
+
+    @Column(name = "PaymentTime")
+    private LocalDateTime paymentTime;
+
+    @Column(name = "RefundAmount", precision = 10, scale = 2)
+    private BigDecimal refundAmount;
+
+    @Column(name = "RefundTime")
+    private LocalDateTime refundTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "BookingSource", nullable = false, length = 20)
+    private BookingSource bookingSource;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "Status", nullable = false, length = 20)
+    private BookingStatus status;
+
+    @Column(name = "SpecialRequests", columnDefinition = "TEXT")
+    private String specialRequests;
+
+    @Column(name = "CheckInTime")
+    private LocalDateTime checkInTime;
+
+    @Column(name = "CheckInStatus")
+    private Boolean checkInStatus;
+
+    @CreationTimestamp
+    @Column(name = "CreatedAt", nullable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "UpdatedAt", nullable = false)
+    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL)
     private List<SeatBooking> seatBookings;
 
-    @Column(nullable = false)
-    private Double totalAmount;
+    
 
-    @Column(nullable = false)
-    private Double discountAmount;
+    // 訂票來源枚舉
+    @Getter
+    public enum BookingSource {
+        WEBSITE("網站"),
+        APP("APP"),
+        ONSITE("現場"),
+        PHONE("電話");
 
-    @Column(nullable = false)
-    private Double finalAmount;
+        private final String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "discount_id")
-    private Discount discount;
+        BookingSource(String description) {
+            this.description = description;
+        }
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private BookingStatus status;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PaymentStatus paymentStatus;
-
-    @Column(length = 50)
-    private String paymentMethod;
-
-    @Column
-    private LocalDateTime paymentTime;
-
-    @Column
-    private LocalDateTime cancelTime;
-
-    @Column
-    private String cancelReason;
-
-    @Column(length = 500)
-    private String specialRequests;
-
-    @CreationTimestamp
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
-
-    @Column
-    private Boolean isDeleted;
+    }
 
     // 訂票狀態枚舉
+    @Getter
     public enum BookingStatus {
-        PENDING("待付款"),
+        PENDING("已預訂"),
         CONFIRMED("已確認"),
         COMPLETED("已完成"),
         CANCELLED("已取消");
@@ -99,17 +112,15 @@ public class Booking {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 支付狀態枚舉
+    @Getter
     public enum PaymentStatus {
         UNPAID("未付款"),
         PAID("已付款"),
         REFUNDED("已退款"),
-        FAILED("付款失敗");
+        CANCELLED("已取消");
 
         private final String description;
 
@@ -117,104 +128,85 @@ public class Booking {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 業務方法
-
-    // 生成訂票編號
     @PrePersist
-    public void generateBookingNumber() {
+    public void prePersist() {
         if (this.bookingNumber == null) {
-            this.bookingNumber = "BK" + System.currentTimeMillis();
+            this.bookingNumber = generateBookingNumber();
         }
-        if (this.isDeleted == null) {
-            this.isDeleted = false;
+        if (this.checkInStatus == null) {
+            this.checkInStatus = false;
+        }
+        if (this.status == null) {
+            this.status = BookingStatus.PENDING;
+        }
+        if (this.paymentStatus == null) {
+            this.paymentStatus = PaymentStatus.UNPAID;
+        }
+        if (this.bookingSource == null) {
+            this.bookingSource = BookingSource.WEBSITE;
         }
     }
 
-    // 計算總金額
+    private String generateBookingNumber() {
+        return "BK" + System.currentTimeMillis();
+    }
+
     public void calculateTotalAmount() {
         if (seatBookings != null && !seatBookings.isEmpty()) {
-            this.totalAmount = schedule.getBasePrice() * seatBookings.size();
-            this.discountAmount = calculateDiscountAmount();
-            this.finalAmount = this.totalAmount - this.discountAmount;
+            this.totalAmount = BigDecimal.valueOf(schedule.getBasePrice())
+                    .multiply(BigDecimal.valueOf(seatBookings.size()));
+            if (this.discountApplied != null) {
+                this.totalAmount = this.totalAmount.subtract(this.discountApplied);
+            }
         }
     }
 
-    // 計算折扣金額
-    private Double calculateDiscountAmount() {
-        if (discount != null) {
-            return discount.calculateDiscount(this.totalAmount);
-        }
-        return 0.0;
-    }
-
-    // 確認訂票
     public void confirm() {
         if (this.status == BookingStatus.PENDING) {
             this.status = BookingStatus.CONFIRMED;
         } else {
-            throw new IllegalStateException("只有待付款狀態的訂票可以確認");
+            throw new IllegalStateException("只有待確認的訂票可以確認");
         }
     }
 
-    // 完成訂票
     public void complete() {
         if (this.status == BookingStatus.CONFIRMED) {
             this.status = BookingStatus.COMPLETED;
         } else {
-            throw new IllegalStateException("只有已確認狀態的訂票可以完成");
+            throw new IllegalStateException("只有已確認的訂票可以完成");
         }
     }
 
-    // 取消訂票
     public void cancel(String reason) {
         if (this.status != BookingStatus.CANCELLED) {
             this.status = BookingStatus.CANCELLED;
-            this.cancelTime = LocalDateTime.now();
-            this.cancelReason = reason;
+            this.paymentStatus = PaymentStatus.CANCELLED;
         } else {
-            throw new IllegalStateException("訂票已經被取消");
+            throw new IllegalStateException("訂票已被取消");
         }
     }
 
-    // 支付訂票
-    public void pay(String paymentMethod) {
-        if (this.paymentStatus == PaymentStatus.UNPAID) {
-            this.paymentStatus = PaymentStatus.PAID;
-            this.paymentMethod = paymentMethod;
-            this.paymentTime = LocalDateTime.now();
-            this.confirm();
+    public void checkIn() {
+        if (!this.checkInStatus) {
+            this.checkInStatus = true;
+            this.checkInTime = LocalDateTime.now();
         } else {
-            throw new IllegalStateException("訂票已支付或已退款");
+            throw new IllegalStateException("已經完成報到");
         }
     }
 
-    // 退款
-    public void refund() {
-        if (this.paymentStatus == PaymentStatus.PAID) {
-            this.paymentStatus = PaymentStatus.REFUNDED;
-            this.cancel("申請退款");
-        } else {
-            throw new IllegalStateException("只有已支付的訂票可以退款");
-        }
-    }
-
-    // 檢查是否可以修改
     public boolean isModifiable() {
         return this.status == BookingStatus.PENDING;
     }
 
-    // 檢查是否可以取消
     public boolean isCancellable() {
         return this.status != BookingStatus.CANCELLED &&
                 this.status != BookingStatus.COMPLETED;
     }
 
-    // 檢查是否可以退款
     public boolean isRefundable() {
         return this.paymentStatus == PaymentStatus.PAID &&
                 this.status != BookingStatus.COMPLETED;

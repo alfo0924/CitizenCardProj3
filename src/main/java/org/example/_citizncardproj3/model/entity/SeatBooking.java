@@ -1,9 +1,6 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -11,75 +8,45 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "seat_bookings")
+@Table(name = "SeatBookings")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class SeatBooking {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long seatBookingId;
+    @EmbeddedId
+    private SeatBookingId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_id", nullable = false)
+    @MapsId("bookingId")
+    @JoinColumn(name = "BookingID", nullable = false)
     private Booking booking;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "schedule_id", nullable = false)
+    @MapsId("scheduleId")
+    @JoinColumn(name = "ScheduleID", nullable = false)
     private MovieSchedule schedule;
 
-    @Column(nullable = false)
-    private String seatNumber;
-
-    @Column(nullable = false)
-    private String seatRow;
-
-    @Column(nullable = false)
-    private String seatColumn;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("seatId")
+    @JoinColumn(name = "SeatID", nullable = false)
+    private SeatManagement seat;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private seattype seatType;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "Status", nullable = false)
     private SeatStatus status;
 
-    @Column(nullable = false)
-    private Double price;
-
-    private String specialRequirements;
-
     @CreationTimestamp
+    @Column(name = "CreatedAt", nullable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Column(name = "UpdatedAt", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(nullable = false)
-    private Boolean isDeleted;
-
-    // 座位類型枚舉
-    public enum SeatType {
-        REGULAR("一般座位"),
-        VIP("VIP座位"),
-        COUPLE("情侶座"),
-        HANDICAP("無障礙座位");
-
-        private final String description;
-
-        SeatType(String description) {
-            this.description = description;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-    }
-
     // 座位狀態枚舉
+    @Getter
     public enum SeatStatus {
         AVAILABLE("可用"),
         BOOKED("已預訂"),
@@ -93,33 +60,17 @@ public class SeatBooking {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 初始化方法
     @PrePersist
     public void prePersist() {
-        if (this.isDeleted == null) {
-            this.isDeleted = false;
-        }
         if (this.status == null) {
             this.status = SeatStatus.AVAILABLE;
         }
-        if (this.seatNumber == null) {
-            this.seatNumber = generateSeatNumber();
-        }
-    }
-
-    // 生成座位編號
-    private String generateSeatNumber() {
-        return this.seatRow + this.seatColumn;
     }
 
     // 業務方法
-
-    // 預訂座位
     public void book() {
         if (isAvailable()) {
             this.status = SeatStatus.BOOKED;
@@ -128,7 +79,6 @@ public class SeatBooking {
         }
     }
 
-    // 取消預訂
     public void cancelBooking() {
         if (this.status == SeatStatus.BOOKED) {
             this.status = SeatStatus.AVAILABLE;
@@ -137,7 +87,6 @@ public class SeatBooking {
         }
     }
 
-    // 佔用座位
     public void occupy() {
         if (this.status == SeatStatus.BOOKED) {
             this.status = SeatStatus.OCCUPIED;
@@ -146,163 +95,60 @@ public class SeatBooking {
         }
     }
 
-    // 鎖定座位
     public void lock() {
         if (isAvailable()) {
             this.status = SeatStatus.LOCKED;
         }
     }
 
-    // 解鎖座位
     public void unlock() {
         if (this.status == SeatStatus.LOCKED) {
             this.status = SeatStatus.AVAILABLE;
         }
     }
 
-    // 設置維護狀態
     public void setMaintenance() {
         this.status = SeatStatus.MAINTENANCE;
     }
 
-
-
-    // 檢查座位是否可用
     public boolean isAvailable() {
-        return this.status == SeatStatus.AVAILABLE &&
-                !this.isDeleted;
+        return this.status == SeatStatus.AVAILABLE;
     }
 
-    // 檢查座位是否可以取消
     public boolean isCancellable() {
         return this.status == SeatStatus.BOOKED &&
-                LocalDateTime.now().isBefore(this.schedule.getShowTime().minusHours(1));
+                LocalDateTime.now().isBefore(
+                        LocalDateTime.of(
+                                schedule.getShowDate(),
+                                schedule.getStartTime()
+                        ).minusHours(1)
+                );
     }
 
-    // 檢查是否為特殊座位
     public boolean isSpecialSeat() {
-        return this.seatType == seattype.VIP ||
-                this.seatType == seattype.COUPLE ||
-                this.seatType == seattype.HANDICAP;
+        return this.seat.getSeatType() == SeatManagement.SeatType.VIP ||
+                this.seat.getSeatType() == SeatManagement.SeatType.COUPLE;
     }
 
-    // 用於日誌記錄的方法
-    public String toLogString() {
-        return String.format("SeatBooking{id=%d, seat='%s', type=%s, status=%s}",
-                seatBookingId, seatNumber, seatType, status);
+    @Override
+    public String toString() {
+        return String.format("SeatBooking{bookingId=%d, scheduleId=%d, seatId=%d, status=%s}",
+                id.getBookingId(), id.getScheduleId(), id.getSeatId(), status);
     }
+}
 
-    // 新增欄位
-    @Column(name = "lock_expiry_time")
-    private LocalDateTime lockExpiryTime;
+@Embeddable
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+class SeatBookingId implements java.io.Serializable {
 
-    @Column(name = "last_modified_by")
-    private String lastModifiedBy;
+    @Column(name = "BookingID")
+    private Long bookingId;
 
-    @Column(name = "booking_reference")
-    private String bookingReference;
+    @Column(name = "ScheduleID")
+    private Long scheduleId;
 
-    // 新增座位類型
-    public enum seattype {
-        REGULAR("一般座位"),
-        VIP("VIP座位"),
-        COUPLE("情侶座"),
-        HANDICAP("無障礙座位"),
-        PREMIUM("豪華座位"),    // 新增豪華座位類型
-        STUDENT("學生座位");    // 新增學生座位類型
-
-        private final String description;
-
-        seattype(String description) {
-            this.description = description;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-    }
-
-// 新增業務方法
-    /**
-     * 暫時鎖定座位
-     * @param duration 鎖定時長(分鐘)
-     */
-    public void temporaryLock(int duration) {
-        if (!isAvailable()) {
-            throw new IllegalStateException("座位無法鎖定");
-        }
-        this.status = SeatStatus.LOCKED;
-        this.lockExpiryTime = LocalDateTime.now().plusMinutes(duration);
-    }
-
-    /**
-     * 檢查鎖定是否過期
-     */
-    public boolean isLockExpired() {
-        return this.status == SeatStatus.LOCKED &&
-                LocalDateTime.now().isAfter(this.lockExpiryTime);
-    }
-
-    /**
-     * 更新座位類型和價格
-     */
-//    @Override
-    public void calculatePrice() {
-        double basePrice = this.schedule.getBasePrice();
-        switch (this.seatType) {
-            case VIP:
-                this.price = basePrice * 1.5;  // VIP座位加價50%
-                break;
-            case COUPLE:
-                this.price = basePrice * 1.3;  // 情侶座加價30%
-                break;
-            case HANDICAP:
-                this.price = basePrice * 0.8;  // 無障礙座位優惠20%
-                break;
-            case PREMIUM:
-                this.price = basePrice * 2.0;  // 豪華座位加價100%
-                break;
-            case STUDENT:
-                this.price = basePrice * 0.7;  // 學生座位優惠30%
-                break;
-            default:
-                this.price = basePrice;
-        }
-
-        // 套用時段加價
-        if (isWeekend() || isPeakHour()) {
-            this.price *= 1.2;  // 旺季加價20%
-        }
-    }
-
-    /**
-     * 檢查是否為週末
-     */
-    private boolean isWeekend() {
-        return this.schedule.getShowTime().getDayOfWeek().getValue() >= 6;
-    }
-
-    /**
-     * 檢查是否為尖峰時段
-     */
-    private boolean isPeakHour() {
-        int hour = this.schedule.getShowTime().getHour();
-        return hour >= 18 && hour <= 22;  // 18:00-22:00為尖峰時段
-    }
-
-    /**
-     * 更新座位資訊
-     */
-    public void updateSeatInfo(String modifiedBy) {
-        this.lastModifiedBy = modifiedBy;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * 設置訂位參考編號
-     */
-    public void setBookingReference(String reference) {
-        this.bookingReference = reference;
-    }
-
+    @Column(name = "SeatID")
+    private Long seatId;
 }

@@ -21,8 +21,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -77,7 +79,6 @@ public class CityMovieServiceImpl implements CityMovieService {
     @Transactional
     public MovieResponse createMovie(MovieCreateRequest request) {
         validateNewMovie(request);
-
         CityMovie movie = CityMovie.builder()
                 .movieName(request.getMovieName())
                 .description(request.getDescription())
@@ -87,16 +88,17 @@ public class CityMovieServiceImpl implements CityMovieService {
                 .language(request.getLanguage())
                 .subtitle(request.getSubtitle())
                 .director(request.getDirector())
-                .cast(request.getCast())
+                .cast(request.getCast().toString())
                 .rating(request.getRating())
-                .categories(request.getCategories())
-                .basePrice(request.getBasePrice())
+                .categoryId(request.getCategoryId()) // 確保MovieCreateRequest有此方法
+                .minAge(request.getMinAge())        // 確保MovieCreateRequest有此方法
+                .status(CityMovie.MovieStatus.COMING_SOON)
+                .isDeleted(false)
                 .build();
 
         movie.updateStatus();
         return convertToResponse(movieRepository.save(movie));
     }
-
     @Override
     @Transactional
     public MovieResponse updateMovie(Long movieId, MovieUpdateRequest request) {
@@ -107,7 +109,11 @@ public class CityMovieServiceImpl implements CityMovieService {
             throw new IllegalStateException("已下檔的電影無法更新");
         }
 
-        movie.updateInfo(request.getMovieName(), request.getDescription(), request.getBasePrice());
+        movie.updateInfo(
+                request.getMovieName(),
+                request.getDescription()
+        );
+
         if (request.getEndDate() != null) {
             movie.extendShowingPeriod(request.getEndDate());
         }
@@ -132,7 +138,6 @@ public class CityMovieServiceImpl implements CityMovieService {
 
         return posterUrl;
     }
-
     @Override
     @Transactional
     public ScheduleResponse createSchedule(Long movieId, ScheduleCreateRequest request) {
@@ -150,8 +155,7 @@ public class CityMovieServiceImpl implements CityMovieService {
                 .roomNumber(request.getRoomNumber())
                 .showTime(request.getShowTime())
                 .endTime(request.getShowTime().plusMinutes(movie.getDuration()))
-                .basePrice(request.getSpecialPrice() != null ?
-                        request.getSpecialPrice() : movie.getBasePrice())
+                .basePrice(request.getSpecialPrice()) // 直接使用請求中的票價
                 .totalSeats(venue.getTotalSeats())
                 .availableSeats(venue.getTotalSeats())
                 .status(MovieSchedule.ScheduleStatus.NOT_STARTED)
@@ -247,7 +251,7 @@ public class CityMovieServiceImpl implements CityMovieService {
                 .language(movie.getLanguage())
                 .subtitle(movie.getSubtitle())
                 .director(movie.getDirector())
-                .cast(movie.getCast())
+                .cast(Collections.singletonList(movie.getCast()))
                 .duration(movie.getDuration())
                 .rating(movie.getRating())
                 .posterUrl(movie.getPosterUrl())

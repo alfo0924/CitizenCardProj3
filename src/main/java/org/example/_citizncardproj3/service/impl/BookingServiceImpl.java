@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,8 +83,8 @@ public class BookingServiceImpl implements BookingService {
                 .schedule(schedule)
                 .status(Booking.BookingStatus.PENDING)
                 .paymentStatus(Booking.PaymentStatus.UNPAID)
-                .totalAmount(totalAmount)
-                .discountAmount(discountAmount)
+                .totalAmount(BigDecimal.valueOf(totalAmount))
+                .refundAmount(discountAmount)
                 .finalAmount(finalAmount)
                 .paymentMethod(String.valueOf(request.getPaymentMethod()))
                 .specialRequests(request.getSpecialRequests())

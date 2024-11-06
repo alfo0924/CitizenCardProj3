@@ -10,6 +10,7 @@ import org.example._citizncardproj3.model.entity.CityMovie;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @Data
@@ -191,7 +192,7 @@ public class MovieResponse {
                 .language(movie.getLanguage())
                 .subtitle(movie.getSubtitle())
                 .director(movie.getDirector())
-                .cast(movie.getCast())
+                .cast(Collections.singletonList(movie.getCast()))
                 .duration(movie.getDuration())
                 .rating(movie.getRating())
                 .posterUrl(movie.getPosterUrl())

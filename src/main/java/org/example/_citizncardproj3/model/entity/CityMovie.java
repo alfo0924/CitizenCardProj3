@@ -1,21 +1,17 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.example._citizncardproj3.model.dto.request.MovieCreateRequest;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
+import javax.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Entity
-@Table(name = "city_movies")
+@Table(name = "CityMovies")
 @Data
 @Builder
 @NoArgsConstructor
@@ -24,55 +20,71 @@ public class CityMovie {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "MovieID")
     private Long movieId;
 
-    @Column(unique = true)
+    @Column(name = "MovieCode", unique = true)
     private String movieCode;
 
-    @Column(nullable = false)
+    @Column(name = "MovieName", nullable = false)
     private String movieName;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "Description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private Integer duration; // 片長（分鐘）
+    @Column(name = "Duration", nullable = false)
+    private Integer duration;
 
-    @Column(nullable = false)
+    @Column(name = "ReleaseDate", nullable = false)
     private LocalDate releaseDate;
 
-    @Column(nullable = false)
+    @Column(name = "EndDate", nullable = false)
     private LocalDate endDate;
 
-    @Column(nullable = false)
+    @Column(name = "Language", nullable = false)
     private String language;
 
+    @Column(name = "Subtitle")
     private String subtitle;
 
-    @Column(nullable = false)
+    @Column(name = "Director", nullable = false)
     private String director;
 
-    @ElementCollection
-    @CollectionTable(name = "movie_cast")
-    private List<String> cast;
+    @Column(name = "Cast", columnDefinition = "TEXT")
+    private String cast;
 
+    @Column(name = "PosterUrl")
     private String posterUrl;
 
+    @Column(name = "TrailerUrl")
     private String trailerUrl;
 
-    @Column(nullable = false)
+    @Column(name = "Rating")
     private String rating;
 
-    @ElementCollection
-    @CollectionTable(name = "movie_categories")
-    private List<String> categories;
-
-    @Column(nullable = false)
-    private Double basePrice;
+    @Column(name = "CategoryID")
+    private Integer categoryId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "Status", nullable = false)
     private MovieStatus status;
+
+    @Column(name = "MinAge")
+    private Integer minAge;
+
+    @CreationTimestamp
+    @Column(name = "CreatedAt", nullable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "UpdatedAt", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @Column(name = "IsDeleted", nullable = false)
+    private Boolean isDeleted;
+
+    @Column(name = "DeletedAt")
+    private LocalDateTime deletedAt;
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL)
     private List<MovieSchedule> schedules;
@@ -80,16 +92,8 @@ public class CityMovie {
     @OneToMany(mappedBy = "movie")
     private List<Booking> bookings;
 
-    @CreationTimestamp
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
-
-    @Column(nullable = false)
-    private Boolean isDeleted;
-
     // 電影狀態枚舉
+    @Getter
     public enum MovieStatus {
         COMING_SOON("即將上映"),
         NOW_SHOWING("熱映中"),
@@ -101,9 +105,6 @@ public class CityMovie {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 初始化方法
@@ -114,6 +115,9 @@ public class CityMovie {
         }
         if (this.movieCode == null) {
             this.movieCode = generateMovieCode();
+        }
+        if (this.minAge == null) {
+            this.minAge = 0;
         }
         updateStatus();
     }
@@ -157,14 +161,17 @@ public class CityMovie {
         this.schedules.remove(schedule);
     }
 
-    // 更新電影資訊
-    public void updateInfo(String movieName, String description, Double basePrice) {
+    // 更新updateInfo方法，移除basePrice參數
+    public void updateInfo(
+            @Size(max = 100, message = "電影名稱長度不能超過100個字元")
+            String movieName,
+            @Size(max = 1000, message = "電影描述長度不能超過1000個字元")
+            String description) {
         if (this.status == MovieStatus.END_SHOWING) {
             throw new IllegalStateException("已下檔的電影無法更新資訊");
         }
         this.movieName = movieName;
         this.description = description;
-        this.basePrice = basePrice;
     }
 
     // 延長上映期間
@@ -195,91 +202,26 @@ public class CityMovie {
                 );
     }
 
-    // 獲取可用場次列表
-    public List<MovieSchedule> getAvailableSchedules() {
-        return this.schedules.stream()
-                .filter(schedule ->
-                        schedule.getStatus() == MovieSchedule.ScheduleStatus.ON_SALE &&
-                                schedule.getAvailableSeats() > 0
-                )
-                .toList();
-    }
-
-    // 計算總收入
-    public Double calculateTotalRevenue() {
-        return this.bookings.stream()
-                .filter(booking -> booking.getPaymentStatus() == Booking.PaymentStatus.PAID)
-                .mapToDouble(Booking::getFinalAmount)
-                .sum();
+    // 軟刪除
+    public void softDelete() {
+        this.isDeleted = true;
+        this.deletedAt = LocalDateTime.now();
     }
 
     // 用於日誌記錄的方法
-    public String toLogString() {
+    @Override
+    public String toString() {
         return String.format("CityMovie{id=%d, code='%s', name='%s', status=%s}",
                 movieId, movieCode, movieName, status);
     }
 
-
-    /**
-     * 檢查是否有進行中的場次
-     */
     public boolean hasActiveSchedules() {
-        if (schedules == null || schedules.isEmpty()) {
+        if (this.schedules == null || this.schedules.isEmpty()) {
             return false;
         }
-        return schedules.stream()
+        return this.schedules.stream()
                 .anyMatch(schedule -> schedule.getStatus() != MovieSchedule.ScheduleStatus.ENDED &&
                         schedule.getStatus() != MovieSchedule.ScheduleStatus.CANCELLED);
     }
-
-
-
-    /**
-     * 電影類別枚舉
-     */
-    public enum MovieCategory {
-        ACTION("動作片"),
-        COMEDY("喜劇片"),
-        DRAMA("劇情片"),
-        HORROR("恐怖片"),
-        ROMANCE("愛情片"),
-        SCIFI("科幻片"),
-        ANIMATION("動畫片"),
-        DOCUMENTARY("紀錄片"),
-        OTHER("其他");
-
-        private final String description;
-
-        MovieCategory(String description) {
-            this.description = description;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-    }
-
-
-
-
-
-    /**
-     * 設置電影類別
-     */
-    public void setCategories(List<MovieCategory> categories) {
-        this.categories = categories.stream()
-                .map(MovieCategory::name)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 獲取電影類別列表
-     */
-    public List<MovieCategory> getMovieCategories() {
-        return this.categories.stream()
-                .map(MovieCategory::valueOf)
-                .collect(Collectors.toList());
-    }
-
 
 }

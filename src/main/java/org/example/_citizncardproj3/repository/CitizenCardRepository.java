@@ -34,7 +34,7 @@ public interface CitizenCardRepository extends JpaRepository<CitizenCard, String
     Page<CitizenCard> findByStatus(CitizenCard.CardStatus status, Pageable pageable);
 
     // 複雜條件查詢
-    @Query("SELECT c FROM CitizenCard c WHERE c.member = :member AND c.status = :status " +
+    @Query("SELECT c FROM CitizenCard c WHERE c.member = :member AND c.CardStatus = :status " +
             "AND c.expiryDate > :currentDate")
     List<CitizenCard> findValidCards(
             @Param("member") Member member,
@@ -43,7 +43,7 @@ public interface CitizenCardRepository extends JpaRepository<CitizenCard, String
     );
 
     // 即將過期的卡片查詢
-    @Query("SELECT c FROM CitizenCard c WHERE c.status = 'ACTIVE' " +
+    @Query("SELECT c FROM CitizenCard c WHERE c.CardStatus = 'ACTIVE' " +
             "AND c.expiryDate BETWEEN :startDate AND :endDate")
     List<CitizenCard> findExpiringCards(
             @Param("startDate") LocalDate startDate,
@@ -54,12 +54,12 @@ public interface CitizenCardRepository extends JpaRepository<CitizenCard, String
     @Query("SELECT c.cardType, COUNT(c) FROM CitizenCard c GROUP BY c.cardType")
     List<Object[]> countByCardType();
 
-    @Query("SELECT COUNT(c) FROM CitizenCard c WHERE c.status = :status")
+    @Query("SELECT COUNT(c) FROM CitizenCard c WHERE c.CardStatus = :status")
     long countByStatus(@Param("status") CitizenCard.CardStatus status);
 
     // 更新操作
     @Modifying
-    @Query("UPDATE CitizenCard c SET c.status = :newStatus WHERE c.cardNumber = :cardNumber")
+    @Query("UPDATE CitizenCard c SET c.CardStatus = :newStatus WHERE c.cardNumber = :cardNumber")
     int updateCardStatus(
             @Param("cardNumber") String cardNumber,
             @Param("newStatus") CitizenCard.CardStatus newStatus
@@ -75,8 +75,8 @@ public interface CitizenCardRepository extends JpaRepository<CitizenCard, String
 
     // 批量操作
     @Modifying
-    @Query("UPDATE CitizenCard c SET c.status = 'EXPIRED' " +
-            "WHERE c.expiryDate < :currentDate AND c.status = 'ACTIVE'")
+    @Query("UPDATE CitizenCard c SET c.CardStatus = 'EXPIRED' " +
+            "WHERE c.expiryDate < :currentDate AND c.CardStatus = 'ACTIVE'")
     int updateExpiredCards(@Param("currentDate") LocalDate currentDate);
 
     // 使用悲觀鎖查詢
@@ -100,7 +100,7 @@ public interface CitizenCardRepository extends JpaRepository<CitizenCard, String
     );
 
     // 查詢需要續期的卡片
-    @Query("SELECT c FROM CitizenCard c WHERE c.status = 'ACTIVE' " +
+    @Query("SELECT c FROM CitizenCard c WHERE c.CardStatus = 'ACTIVE' " +
             "AND c.expiryDate <= :warningDate")
     List<CitizenCard> findCardsNeedingRenewal(@Param("warningDate") LocalDate warningDate);
 

@@ -16,7 +16,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "members")
+@Table(name = "Members")
 @Data
 @Builder
 @NoArgsConstructor
@@ -25,41 +25,69 @@ public class Member implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "MemberID")
     private Long memberId;
 
-    @Column(unique = true, nullable = false)
+    @Column(name = "Email", unique = true, nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "Password", nullable = false)
     private String password;
 
-    @Column(nullable = false)
-    private String name;
-
-    @Column(unique = true)
+    @Column(name = "Phone", unique = true)
     private String phone;
 
-    private String address;
+    @Column(name = "Name", nullable = false)
+    private String name;
 
+    @Column(name = "Birthday")
     private LocalDate birthday;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "Gender")
     private Gender gender;
 
-    private String avatarUrl;
+    @Column(name = "Address")
+    private String address;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "Role", nullable = false)
+    private Role role;
 
+    @Column(name = "RegisterDate", nullable = false)
+    private LocalDateTime registerDate;
 
-
-    private Integer failedLoginAttempts;
-
+    @Column(name = "LastLoginTime")
     private LocalDateTime lastLoginTime;
 
-    private LocalDateTime lastPasswordChangeTime;
+    @Column(name = "LastPasswordChange")
+    private LocalDateTime lastPasswordChange;
 
+    @Column(name = "FailedLoginAttempts")
+    private Integer failedLoginAttempts;
+
+    @Column(name = "AccountLocked")
+    private Boolean accountLocked;
+
+    @Column(name = "PasswordResetToken")
     private String passwordResetToken;
 
+    @Column(name = "PasswordResetExpiry")
     private LocalDateTime passwordResetExpiry;
+
+    @CreationTimestamp
+    @Column(name = "CreatedAt", nullable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "UpdatedAt", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @Column(name = "IsDeleted", nullable = false)
+    private Boolean isDeleted;
+
+    @Column(name = "DeletedAt")
+    private LocalDateTime deletedAt;
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     private List<CitizenCard> citizenCards;
@@ -72,15 +100,6 @@ public class Member implements UserDetails {
 
     @OneToOne(mappedBy = "member", cascade = CascadeType.ALL)
     private Wallet wallet;
-
-    @CreationTimestamp
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
-
-    @Column(nullable = false)
-    private Boolean isDeleted;
 
     // 性別枚舉
     @Getter
@@ -97,59 +116,67 @@ public class Member implements UserDetails {
 
     }
 
+    // 角色枚舉
+    @Getter
+    public enum Role {
+        ROLE_USER("一般用戶"),
+        ROLE_ADMIN("管理員");
 
-    // 業務方法
+        private final String description;
 
-    // 啟用帳號
-    public void activate() {
-        if (this.status == MemberStatus.INACTIVE) {
-            this.status = MemberStatus.ACTIVE;
-        } else {
-            throw new IllegalStateException("只有未啟用的帳號可以啟用");
+        Role(String description) {
+            this.description = description;
         }
+
     }
 
-    // 停權帳號
-    public void suspend(String reason) {
-        if (this.status == MemberStatus.ACTIVE) {
-            this.status = MemberStatus.SUSPENDED;
-        } else {
-            throw new IllegalStateException("只有正常狀態的帳號可以停權");
+    // 初始化方法
+    @PrePersist
+    public void prePersist() {
+        if (this.isDeleted == null) {
+            this.isDeleted = false;
         }
-    }
-
-    // 解鎖帳號
-    public void unlock() {
-        if (this.status == MemberStatus.LOCKED) {
-            this.status = MemberStatus.ACTIVE;
+        if (this.role == null) {
+            this.role = Role.ROLE_USER;
+        }
+        if (this.failedLoginAttempts == null) {
             this.failedLoginAttempts = 0;
         }
+        if (this.accountLocked == null) {
+            this.accountLocked = false;
+        }
+        if (this.registerDate == null) {
+            this.registerDate = LocalDateTime.now();
+        }
     }
 
-    // 記錄登入失敗
+    // 業務方法
+    public void recordLoginSuccess() {
+        this.lastLoginTime = LocalDateTime.now();
+        this.failedLoginAttempts = 0;
+        this.accountLocked = false;
+    }
+
     public void recordLoginFailure() {
         this.failedLoginAttempts++;
         if (this.failedLoginAttempts >= 5) {
-            this.status = MemberStatus.LOCKED;
+            this.accountLocked = true;
         }
     }
 
-    // 重設密碼
     public void resetPassword(String newPassword) {
         this.password = newPassword;
-        this.lastPasswordChangeTime = LocalDateTime.now();
+        this.lastPasswordChange = LocalDateTime.now();
         this.passwordResetToken = null;
         this.passwordResetExpiry = null;
     }
 
-    // 更新個人資料
     public void updateProfile(String name, String phone, String address) {
         this.name = name;
         this.phone = phone;
         this.address = address;
     }
 
-    // 計算年齡
     public int getAge() {
         if (birthday == null) {
             return 0;
@@ -157,9 +184,9 @@ public class Member implements UserDetails {
         return Period.between(birthday, LocalDate.now()).getYears();
     }
 
-    // 檢查帳號是否有效
-    public boolean isAccountValid() {
-        return status == MemberStatus.ACTIVE && !isDeleted;
+    public void softDelete() {
+        this.isDeleted = true;
+        this.deletedAt = LocalDateTime.now();
     }
 
     // 實現UserDetails接口的方法
@@ -182,224 +209,25 @@ public class Member implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return status != MemberStatus.LOCKED;
+        return !this.accountLocked;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        if (lastPasswordChangeTime == null) {
+        if (lastPasswordChange == null) {
             return true;
         }
-        // 密碼90天過期
-        return lastPasswordChangeTime.plusDays(90).isAfter(LocalDateTime.now());
+        return lastPasswordChange.plusDays(90).isAfter(LocalDateTime.now());
     }
 
     @Override
     public boolean isEnabled() {
-        return status == MemberStatus.ACTIVE && !isDeleted;
+        return !this.isDeleted;
     }
 
-    // 用於日誌記錄的方法
-    public String toLogString() {
-        return String.format("Member{id=%d, email='%s', name='%s', status=%s}",
-                memberId, email, name, status);
+    @Override
+    public String toString() {
+        return String.format("Member{id=%d, email='%s', name='%s'}",
+                memberId, email, name);
     }
-    /**
-     * 最後通知時間
-     */
-    @Column(name = "last_notification_time")
-    private LocalDateTime lastNotificationTime;
-
-    /**
-     * 通知設定
-     */
-    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private NotificationSettings notificationSettings;
-
-    /**
-     * 更新最後通知時間
-     */
-    public void updateLastNotificationTime() {
-        this.lastNotificationTime = LocalDateTime.now();
-    }
-
-    /**
-     * 檢查是否需要發送通知
-     */
-    public boolean needsNotification(LocalDateTime checkTime) {
-        if (this.lastNotificationTime == null) {
-            return true;
-        }
-        return this.lastNotificationTime.isBefore(checkTime);
-    }
-
-    /**
-     * 獲取通知設定
-     */
-    public NotificationSettings getNotificationSettings() {
-        if (this.notificationSettings == null) {
-            this.notificationSettings = new NotificationSettings();
-            this.notificationSettings.setMember(this);
-        }
-        return this.notificationSettings;
-    }
-
-
-
-    public static class MemberBuilder {
-        public MemberBuilder gender(String genderStr) {
-            this.gender = Gender.valueOf(genderStr.toUpperCase());
-            return this;
-        }
-    }
-
-    /**
-     * 郵件驗證相關欄位
-     */
-    @Column(length = 100)
-    private String verificationToken;
-
-    @Column
-    private LocalDateTime verificationTokenExpiry;
-
-    @Column
-    private LocalDateTime emailVerifiedTime;
-
-    /**
-     * 密碼重設相關欄位
-     */
-    @Column(length = 100)
-    private String resetToken;
-
-    @Column
-    private LocalDateTime resetTokenExpiry;
-
-
-
-    /**
-     *
-     *
-     *
-     * 角色枚舉
-     */
-    public enum MemberRole {
-        USER("一般用戶"),
-        ADMIN("管理員");
-
-        private final String description;
-
-        MemberRole(String description) {
-            this.description = description;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-    }
-
-    /**
-     * 驗證相關方法
-     */
-    public boolean isEmailVerified() {
-        return emailVerifiedTime != null;
-    }
-
-    public void verifyEmail() {
-        this.status = MemberStatus.ACTIVE;
-        this.emailVerifiedTime = LocalDateTime.now();
-        this.verificationToken = null;
-        this.verificationTokenExpiry = null;
-    }
-
-    /**
-     * 密碼重設相關方法
-     */
-    public void setPasswordResetToken(String token) {
-        this.resetToken = token;
-        this.resetTokenExpiry = LocalDateTime.now().plusHours(24);
-    }
-
-    public boolean isPasswordResetTokenValid() {
-        return resetToken != null &&
-                resetTokenExpiry != null &&
-                resetTokenExpiry.isAfter(LocalDateTime.now());
-    }
-
-    /**
-     * 初始化方法
-     */
-    @PrePersist
-    public void prePersist() {
-        if (this.isDeleted == null) {
-            this.isDeleted = false;
-        }
-        if (this.status == null) {
-            this.status = MemberStatus.PENDING;
-        }
-        if (this.role == null) {
-            this.role = Role.ROLE_USER;
-        }
-        if (this.failedLoginAttempts == null) {
-            this.failedLoginAttempts = 0;
-        }
-        if (this.notificationSettings == null) {
-            this.notificationSettings = new NotificationSettings();
-            this.notificationSettings.setMember(this);
-        }
-        if (this.registrationTime == null) {
-            this.registrationTime = LocalDateTime.now();
-        }
-    }
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private MemberStatus status;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role;
-
-    // 會員狀態枚舉
-    public enum MemberStatus {
-        PENDING("待驗證"),
-        ACTIVE("正常"),
-        INACTIVE("未啟用"),
-        SUSPENDED("已停權"),
-        LOCKED("已鎖定");
-
-        private final String description;
-
-        MemberStatus(String description) {
-            this.description = description;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-    }
-
-    // 角色枚舉
-    public enum Role {
-        ROLE_USER("一般用戶"),
-        ROLE_ADMIN("管理員");
-
-        private final String description;
-
-        Role(String description) {
-            this.description = description;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-    }
-    @Column(nullable = false)
-    private LocalDateTime registrationTime;
-
-    public void setResetToken(String token) {
-        this.resetToken = token;
-        this.resetTokenExpiry = LocalDateTime.now().plusHours(24);
-    }
-
-
 }

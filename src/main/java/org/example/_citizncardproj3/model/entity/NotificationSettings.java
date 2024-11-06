@@ -11,7 +11,7 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notification_settings")
+@Table(name = "NotificationSettings")
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,77 +20,63 @@ public class NotificationSettings {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "SettingsID")
     private Long settingsId;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "MemberID", nullable = false)
     private Member member;
 
-    /**
-     * 電子郵件通知
-     */
-    @Column(name = "email_notification", nullable = false)
-    private boolean emailNotification = true;
+    @Column(name = "EmailNotification", nullable = false)
+    private Boolean emailNotification = true;
 
-    /**
-     * 簡訊通知
-     */
-    @Column(name = "sms_notification", nullable = false)
-    private boolean smsNotification = true;
+    @Column(name = "SMSNotification", nullable = false)
+    private Boolean smsNotification = true;
 
-    /**
-     * 推播通知
-     */
-    @Column(name = "push_notification", nullable = false)
-    private boolean pushNotification = true;
+    @Column(name = "PushNotification", nullable = false)
+    private Boolean pushNotification = true;
 
-    /**
-     * 行銷通知
-     */
-    @Column(name = "marketing_notification", nullable = false)
-    private boolean marketingNotification = false;
+    @Column(name = "MarketingNotification", nullable = false)
+    private Boolean marketingNotification = false;
 
-    /**
-     * 最後通知時間
-     */
-    @Column(name = "last_notification_time")
+    @Column(name = "LastNotificationTime")
     private LocalDateTime lastNotificationTime;
 
-    /**
-     * 通知語言
-     */
-    @Column(name = "notification_language", length = 10)
+    @Column(name = "NotificationLanguage", length = 10)
     private String notificationLanguage = "zh-TW";
 
-    /**
-     * 每日通知時段開始
-     */
-    @Column(name = "daily_start_time")
-    private Integer dailyStartTime = 9; // 9:00
+    @Column(name = "DailyStartTime")
+    private Integer dailyStartTime = 9;
 
-    /**
-     * 每日通知時段結束
-     */
-    @Column(name = "daily_end_time")
-    private Integer dailyEndTime = 21; // 21:00
+    @Column(name = "DailyEndTime")
+    private Integer dailyEndTime = 21;
 
-    /**
-     * 是否啟用勿擾模式
-     */
-    @Column(name = "do_not_disturb")
-    private boolean doNotDisturb = false;
+    @Column(name = "DoNotDisturb", nullable = false)
+    private Boolean doNotDisturb = false;
 
     @CreationTimestamp
+    @Column(name = "CreatedAt", nullable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Column(name = "UpdatedAt", nullable = false)
     private LocalDateTime updatedAt;
 
-    /**
-     * 初始化方法
-     */
+    // 初始化方法
     @PrePersist
     public void prePersist() {
+        if (this.emailNotification == null) {
+            this.emailNotification = true;
+        }
+        if (this.smsNotification == null) {
+            this.smsNotification = true;
+        }
+        if (this.pushNotification == null) {
+            this.pushNotification = true;
+        }
+        if (this.marketingNotification == null) {
+            this.marketingNotification = false;
+        }
         if (this.notificationLanguage == null) {
             this.notificationLanguage = "zh-TW";
         }
@@ -100,30 +86,24 @@ public class NotificationSettings {
         if (this.dailyEndTime == null) {
             this.dailyEndTime = 21;
         }
+        if (this.doNotDisturb == null) {
+            this.doNotDisturb = false;
+        }
     }
 
-    /**
-     * 更新最後通知時間
-     */
+    // 業務方法
     public void updateLastNotificationTime() {
         this.lastNotificationTime = LocalDateTime.now();
     }
 
-    /**
-     * 檢查是否在通知時段內
-     */
     public boolean isInNotificationPeriod() {
-        if (doNotDisturb) {
+        if (Boolean.TRUE.equals(doNotDisturb)) {
             return false;
         }
-
         int currentHour = LocalDateTime.now().getHour();
         return currentHour >= dailyStartTime && currentHour < dailyEndTime;
     }
 
-    /**
-     * 檢查是否需要發送通知
-     */
     public boolean needsNotification(LocalDateTime checkTime) {
         if (lastNotificationTime == null) {
             return true;
@@ -131,9 +111,6 @@ public class NotificationSettings {
         return lastNotificationTime.isBefore(checkTime) && isInNotificationPeriod();
     }
 
-    /**
-     * 啟用所有通知
-     */
     public void enableAllNotifications() {
         this.emailNotification = true;
         this.smsNotification = true;
@@ -142,9 +119,6 @@ public class NotificationSettings {
         this.doNotDisturb = false;
     }
 
-    /**
-     * 停用所有通知
-     */
     public void disableAllNotifications() {
         this.emailNotification = false;
         this.smsNotification = false;
@@ -153,9 +127,6 @@ public class NotificationSettings {
         this.doNotDisturb = true;
     }
 
-    /**
-     * 設置通知時段
-     */
     public void setNotificationPeriod(Integer startTime, Integer endTime) {
         if (startTime < 0 || startTime > 23 || endTime < 0 || endTime > 23) {
             throw new IllegalArgumentException("時間必須在0-23之間");
@@ -167,31 +138,19 @@ public class NotificationSettings {
         this.dailyEndTime = endTime;
     }
 
-    /**
-     * 檢查特定類型的通知是否啟用
-     */
     public boolean isNotificationEnabled(NotificationType type) {
-        if (doNotDisturb) {
+        if (Boolean.TRUE.equals(doNotDisturb)) {
             return false;
         }
 
-        switch (type) {
-            case EMAIL:
-                return emailNotification;
-            case SMS:
-                return smsNotification;
-            case PUSH:
-                return pushNotification;
-            case MARKETING:
-                return marketingNotification;
-            default:
-                return false;
-        }
+        return switch (type) {
+            case EMAIL -> Boolean.TRUE.equals(emailNotification);
+            case SMS -> Boolean.TRUE.equals(smsNotification);
+            case PUSH -> Boolean.TRUE.equals(pushNotification);
+            case MARKETING -> Boolean.TRUE.equals(marketingNotification);
+        };
     }
 
-    /**
-     * 通知類型枚舉
-     */
     public enum NotificationType {
         EMAIL,
         SMS,

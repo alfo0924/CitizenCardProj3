@@ -1,9 +1,6 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -11,7 +8,7 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "Notifications")
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,58 +17,49 @@ public class Notification {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "NotificationID")
     private Long notificationId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "MemberID", nullable = false)
     private Member member;
 
-    @Column(nullable = false)
+    @Column(name = "Title", nullable = false)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "Content", columnDefinition = "TEXT")
     private String content;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "NotificationType", nullable = false)
     private NotificationType type;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private NotificationPriority priority;
-
-    @Column(nullable = false)
+    @Column(name = "IsRead", nullable = false)
     private Boolean isRead;
 
-    @Column(nullable = false)
+    @Column(name = "IsSent", nullable = false)
     private Boolean isSent;
 
-    @Column(nullable = false)
+    @Column(name = "SendTime", nullable = false)
     private LocalDateTime sendTime;
 
-    private LocalDateTime readTime;
-
+    @Column(name = "ExpireTime")
     private LocalDateTime expireTime;
 
-    @Column(length = 100)
-    private String actionUrl;
-
-    @Column(length = 50)
-    private String referenceId;
-
-    @Column(length = 50)
-    private String referenceType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "Priority", nullable = false)
+    private NotificationPriority priority;
 
     @CreationTimestamp
+    @Column(name = "CreatedAt", nullable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Column(name = "UpdatedAt", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(nullable = false)
-    private Boolean isDeleted;
-
     // 通知類型枚舉
+    @Getter
     public enum NotificationType {
         SYSTEM("系統通知"),
         BOOKING("訂票通知"),
@@ -86,12 +74,10 @@ public class Notification {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 通知優先級枚舉
+    @Getter
     public enum NotificationPriority {
         LOW("低"),
         MEDIUM("中"),
@@ -104,17 +90,11 @@ public class Notification {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 初始化方法
     @PrePersist
     public void prePersist() {
-        if (this.isDeleted == null) {
-            this.isDeleted = false;
-        }
         if (this.isRead == null) {
             this.isRead = false;
         }
@@ -130,16 +110,12 @@ public class Notification {
     }
 
     // 業務方法
-
-    // 標記為已讀
     public void markAsRead() {
         if (!this.isRead) {
             this.isRead = true;
-            this.readTime = LocalDateTime.now();
         }
     }
 
-    // 標記為已發送
     public void markAsSent() {
         if (!this.isSent) {
             this.isSent = true;
@@ -147,7 +123,6 @@ public class Notification {
         }
     }
 
-    // 設置過期時間
     public void setExpiration(LocalDateTime expireTime) {
         if (expireTime.isAfter(LocalDateTime.now())) {
             this.expireTime = expireTime;
@@ -156,19 +131,16 @@ public class Notification {
         }
     }
 
-    // 檢查是否過期
     public boolean isExpired() {
         return this.expireTime != null &&
                 LocalDateTime.now().isAfter(this.expireTime);
     }
 
-    // 檢查是否需要立即處理
     public boolean requiresImmediate() {
         return this.priority == NotificationPriority.URGENT ||
                 this.priority == NotificationPriority.HIGH;
     }
 
-    // 更新通知內容
     public void updateContent(String title, String content) {
         if (!this.isRead) {
             this.title = title;
@@ -178,26 +150,13 @@ public class Notification {
         }
     }
 
-    // 添加操作連結
-    public void addAction(String actionUrl) {
-        this.actionUrl = actionUrl;
-    }
-
-    // 設置關聯引用
-    public void setReference(String referenceType, String referenceId) {
-        this.referenceType = referenceType;
-        this.referenceId = referenceId;
-    }
-
-    // 檢查通知是否可見
     public boolean isVisible() {
-        return !this.isDeleted &&
-                !this.isExpired() &&
+        return !this.isExpired() &&
                 (this.expireTime == null || LocalDateTime.now().isBefore(this.expireTime));
     }
 
-    // 用於日誌記錄的方法
-    public String toLogString() {
+    @Override
+    public String toString() {
         return String.format("Notification{id=%d, type=%s, priority=%s, title='%s', isRead=%s}",
                 notificationId, type, priority, title, isRead);
     }

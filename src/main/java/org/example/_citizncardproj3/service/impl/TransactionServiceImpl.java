@@ -76,7 +76,7 @@ public class TransactionServiceImpl implements TransactionService {
             throw new IllegalStateException("交易狀態不正確");
         }
 
-        transaction.setStatus(Transaction.TransactionStatus.COMPLETED);
+        transaction.setStatus(Transaction.TransactionStatus.SUCCESS);
         transaction.setCompletionTime(LocalDateTime.now());
         transaction = transactionRepository.save(transaction);
 

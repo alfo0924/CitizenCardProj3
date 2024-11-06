@@ -25,12 +25,11 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
     private final IdentityVerificationRepository verificationRepository;
     private final MemberRepository memberRepository;
 
-    @Override
     @Transactional
+    @Override
     public IdentityVerification submitVerification(
             String userEmail,
             IdentityVerification.VerificationType type,
-            String documentNumber,
             MultipartFile documentFile) {
 
         Member member = memberRepository.findByEmail(userEmail)
@@ -38,7 +37,11 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
 
         // 檢查是否有進行中的驗證
         Optional<IdentityVerification> existingVerification = verificationRepository
-                .findValidVerification(member, type);
+                .findByMemberAndVerificationTypeAndStatus(
+                        member,
+                        type,
+                        IdentityVerification.VerificationStatus.PENDING
+                );
 
         if (existingVerification.isPresent()) {
             throw new IllegalStateException("已有進行中的身份驗證");
@@ -47,29 +50,19 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
         // 驗證文件
         validateDocument(documentFile);
 
-        // 上傳文件並獲取URL
-        String documentUrl = uploadDocument(documentFile);
-
         // 創建驗證記錄
         IdentityVerification verification = IdentityVerification.builder()
                 .member(member)
                 .verificationType(type)
-                .documentNumber(documentNumber)
-                .documentUrl(documentUrl)
                 .status(IdentityVerification.VerificationStatus.PENDING)
                 .build();
 
         return verificationRepository.save(verification);
     }
 
-    @Override
     @Transactional
-    public IdentityVerification verifyIdentity(
-            Long verificationId,
-            String verifier,
-            boolean approved,
-            String comment) {
-
+    @Override
+    public IdentityVerification processVerification(Long verificationId, boolean approved) {
         IdentityVerification verification = verificationRepository.findById(verificationId)
                 .orElseThrow(() -> new IllegalArgumentException("驗證記錄不存在"));
 
@@ -77,33 +70,43 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
             throw new IllegalStateException("只有待驗證的記錄可以進行驗證");
         }
 
-        verification.verify(verifier, approved, comment);
+        if (approved) {
+            verification.setStatus(IdentityVerification.VerificationStatus.VERIFIED);
+            verification.setVerificationTime(LocalDateTime.now());
+        } else {
+            verification.setStatus(IdentityVerification.VerificationStatus.REJECTED);
+        }
+
         return verificationRepository.save(verification);
     }
 
-    @Override
     @Transactional
-    public IdentityVerification updateDocument(
-            Long verificationId,
-            String documentNumber,
-            MultipartFile documentFile) {
-
+    @Override
+    public IdentityVerification resubmitVerification(Long verificationId) {
         IdentityVerification verification = verificationRepository.findById(verificationId)
                 .orElseThrow(() -> new IllegalArgumentException("驗證記錄不存在"));
 
         if (verification.getStatus() != IdentityVerification.VerificationStatus.REJECTED) {
-            throw new IllegalStateException("只有被拒絕的驗證可以更新文件");
+            throw new IllegalStateException("只有被拒絕的驗證可以重新提交");
         }
 
-        // 驗證文件
-        validateDocument(documentFile);
-
-        // 上傳新文件
-        String documentUrl = uploadDocument(documentFile);
-
-        // 更新文件信息
-        verification.updateDocument(documentNumber, documentUrl);
+        verification.setStatus(IdentityVerification.VerificationStatus.PENDING);
         return verificationRepository.save(verification);
+    }
+
+    @Override
+    public IdentityVerification submitVerification(String userEmail, IdentityVerification.VerificationType type, String documentNumber, MultipartFile documentFile) {
+        return null;
+    }
+
+    @Override
+    public IdentityVerification verifyIdentity(Long verificationId, String verifier, boolean approved, String comment) {
+        return null;
+    }
+
+    @Override
+    public IdentityVerification updateDocument(Long verificationId, String documentNumber, MultipartFile documentFile) {
+        return null;
     }
 
     @Override
@@ -116,20 +119,21 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
 
     @Override
     public List<IdentityVerification> getPendingVerifications() {
-        return verificationRepository.findPendingVerifications();
+        return verificationRepository.findByStatus(IdentityVerification.VerificationStatus.PENDING);
     }
 
     @Override
     @Transactional
     public void checkAndUpdateExpiredVerifications() {
-        // 設定過期時間（例如：一年）
         LocalDateTime expiryTime = LocalDateTime.now().minusYears(1);
+        List<IdentityVerification> verifications = verificationRepository
+                .findByStatusAndVerificationTimeBefore(
+                        IdentityVerification.VerificationStatus.VERIFIED,
+                        expiryTime
+                );
 
-        List<IdentityVerification> expiredVerifications =
-                verificationRepository.findExpiredVerifications(expiryTime);
-
-        for (IdentityVerification verification : expiredVerifications) {
-            verification.setExpired();
+        for (IdentityVerification verification : verifications) {
+            verification.setStatus(IdentityVerification.VerificationStatus.EXPIRED);
             verificationRepository.save(verification);
         }
     }
@@ -161,11 +165,19 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
 
     @Override
     public boolean hasValidVerification(String userEmail, IdentityVerification.VerificationType type) {
-        return false;
+        Member member = memberRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new CustomException.MemberNotFoundException(userEmail));
+
+        return verificationRepository
+                .findByMemberAndVerificationTypeAndStatus(
+                        member,
+                        type,
+                        IdentityVerification.VerificationStatus.VERIFIED
+                )
+                .isPresent();
     }
 
     // 私有輔助方法
-
     private void validateDocument(MultipartFile file) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("文件不能為空");
@@ -183,27 +195,6 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
                         contentType.equals("image/png") ||
                         contentType.equals("application/pdf"))) {
             throw new IllegalArgumentException("不支援的文件類型");
-        }
-    }
-
-    private String uploadDocument(MultipartFile file) {
-        // TODO: 實作文件上傳邏輯
-        // 這裡應該實現實際的文件上傳功能，例如上傳到雲存儲
-        return "http://example.com/documents/" + System.currentTimeMillis();
-    }
-
-    private boolean isDocumentValid(String documentNumber, IdentityVerification.VerificationType type) {
-        // TODO: 實作文件驗證邏輯
-        // 這裡應該實現實際的文件驗證邏輯，例如檢查證件號碼格式
-        switch (type) {
-            case ID_CARD:
-                return documentNumber.matches("[A-Z][1-2]\\d{8}");
-            case STUDENT_CARD:
-                return documentNumber.length() == 10;
-            case DISABILITY_CARD:
-                return documentNumber.matches("\\d{8}");
-            default:
-                return true;
         }
     }
 }

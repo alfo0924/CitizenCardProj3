@@ -1,9 +1,6 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Type;
 
@@ -11,7 +8,7 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "system_logs")
+@Table(name = "SystemLogs")
 @Data
 @Builder
 @NoArgsConstructor
@@ -30,7 +27,7 @@ public class SystemLog {
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "UserId")
     private Member user;
 
     @Column(length = 45)
@@ -69,6 +66,7 @@ public class SystemLog {
     private LocalDateTime createdAt;
 
     // 日誌類型枚舉
+    @Getter
     public enum LogType {
         SYSTEM("系統操作"),
         ERROR("錯誤"),
@@ -82,12 +80,10 @@ public class SystemLog {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 日誌級別枚舉
+    @Getter
     public enum LogLevel {
         INFO("資訊"),
         WARNING("警告"),
@@ -100,9 +96,6 @@ public class SystemLog {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
 
@@ -193,17 +186,11 @@ public class SystemLog {
     public String toString() {
         return formatLogMessage();
     }
+    // 添加getter和setter
+    @Setter
+    @Getter
     @Column(nullable = false)
     private Boolean isDeleted = false;  // 添加軟刪除欄位，預設為false
-
-    // 添加getter和setter
-    public Boolean getIsDeleted() {
-        return isDeleted;
-    }
-
-    public void setIsDeleted(Boolean deleted) {
-        isDeleted = deleted;
-    }
 
     // 添加初始化方法
     @PrePersist

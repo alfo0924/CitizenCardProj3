@@ -1,9 +1,6 @@
 package org.example._citizncardproj3.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -11,7 +8,7 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "virtual_cards")
+@Table(name = "VirtualCards")
 @Data
 @Builder
 @NoArgsConstructor
@@ -23,7 +20,7 @@ public class VirtualCard {
     private Long virtualCardId;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", unique = true, nullable = false)
+    @JoinColumn(name = "MemberId", unique = true, nullable = false)
     private Member member;
 
     @Column(unique = true)
@@ -60,6 +57,7 @@ public class VirtualCard {
     private Boolean isDeleted;
 
     // 卡片狀態枚舉
+    @Getter
     public enum CardStatus {
         ACTIVE("有效"),
         INACTIVE("未啟用"),
@@ -72,9 +70,6 @@ public class VirtualCard {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 初始化方法
