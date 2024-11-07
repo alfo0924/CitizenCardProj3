@@ -107,7 +107,8 @@ public class TransactionServiceImpl implements TransactionService {
                 .type(Transaction.TransactionType.REFUND)
                 .status(Transaction.TransactionStatus.PENDING)
                 .paymentMethod(Transaction.PaymentMethod.WALLET_BALANCE)
-                .transactionNumber(transaction.getTransactionNumber())
+                .transactionNumber(generateRefundTransactionNumber(transaction.getTransactionNumber()))
+                .description("退款-原交易號: " + transaction.getTransactionNumber())
                 .transactionTime(LocalDateTime.now())
                 .build();
 
@@ -117,10 +118,16 @@ public class TransactionServiceImpl implements TransactionService {
         processTransaction(refundTransaction);
 
         // 更新原交易狀態
-        transaction.setStatus(Transaction.TransactionStatus.REFUNDED);
+        transaction.setStatus(Transaction.TransactionStatus.CANCELLED);
+        transaction.setStatusMessage("已退款: " + reason);
         transactionRepository.save(transaction);
 
         return refundTransaction;
+    }
+
+    // 新增生成退款交易編號的輔助方法
+    private String generateRefundTransactionNumber(String originalTransactionNumber) {
+        return "RF" + originalTransactionNumber;
     }
 
     @Override
@@ -185,19 +192,19 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     // 私有輔助方法
-
     private void processTransaction(Transaction transaction) {
         try {
             Wallet wallet = transaction.getWallet();
 
             switch (transaction.getType()) {
-                case TOP_UP:
-                case REFUND:
+                case DEPOSIT:  // 修改自 TOP_UP
                     wallet.addBalance(transaction.getAmount());
                     break;
-                case PAYMENT:
-                case TRANSFER:
+                case PAYMENT, TRANSFER:
                     wallet.subtractBalance(transaction.getAmount());
+                    break;
+                case REFUND:
+                    wallet.addBalance(transaction.getAmount());
                     break;
             }
 

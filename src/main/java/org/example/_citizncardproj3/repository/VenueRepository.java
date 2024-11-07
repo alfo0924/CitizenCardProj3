@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import javax.persistence.LockModeType;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -38,8 +39,13 @@ public interface VenueRepository extends JpaRepository<Venue, Long> {
 
     // 查詢特定時間可用的場地
     @Query("SELECT DISTINCT v FROM Venue v LEFT JOIN v.schedules s " +
-            "WHERE v.status = 'ACTIVE' AND " +
-            "(s IS NULL OR s.showTime NOT BETWEEN :startTime AND :endTime)")
+            "WHERE v.status = 'ACTIVE' AND v.isDeleted = false AND " +
+            "(s IS NULL OR NOT EXISTS (" +
+            "   SELECT 1 FROM MovieSchedule ms " +
+            "   WHERE ms.venue = v AND " +
+            "   ms.showDate BETWEEN :startTime AND :endTime AND " +
+            "   ms.isCancelled = false" +
+            "))")
     List<Venue> findAvailableVenuesForTime(
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
@@ -49,7 +55,7 @@ public interface VenueRepository extends JpaRepository<Venue, Long> {
     @Query("SELECT v.status, COUNT(v) FROM Venue v GROUP BY v.status")
     List<Object[]> countByStatus();
 
-    @Query("SELECT SUM(v.totalSeats) FROM Venue v WHERE v.status = 'ACTIVE'")
+    @Query("SELECT SUM(v.totalSeats) FROM Venue v WHERE v.status = 'ACTIVE' AND v.isDeleted = false")
     Integer getTotalAvailableSeats();
 
     // 更新操作
@@ -60,128 +66,70 @@ public interface VenueRepository extends JpaRepository<Venue, Long> {
             @Param("newStatus") Venue.VenueStatus newStatus
     );
 
-    @Modifying
-    @Query("UPDATE Venue v SET v.lastMaintenanceDate = CURRENT_TIMESTAMP, " +
-            "v.nextMaintenanceDate = :nextMaintenanceDate " +
-            "WHERE v.venueId = :venueId")
-    int updateMaintenanceInfo(
-            @Param("venueId") Long venueId,
-            @Param("nextMaintenanceDate") LocalDateTime nextMaintenanceDate
-    );
-
-    // 批量操作
-    @Modifying
-    @Query("UPDATE Venue v SET v.status = 'MAINTENANCE' " +
-            "WHERE v.nextMaintenanceDate <= CURRENT_TIMESTAMP " +
-            "AND v.status = 'ACTIVE'")
-    int updateVenuesNeedingMaintenance();
-
     // 使用悲觀鎖查詢
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM Venue v WHERE v.venueId = :venueId")
     Optional<Venue> findByIdWithLock(@Param("venueId") Long venueId);
 
-    // 查詢需要維護的場地
-    @Query("SELECT v FROM Venue v WHERE v.nextMaintenanceDate <= :checkDate " +
-            "AND v.status != 'MAINTENANCE'")
-    List<Venue> findVenuesNeedingMaintenance(
-            @Param("checkDate") LocalDateTime checkDate
-    );
-
-    // 查詢特定座位配置的場地
-    @Query("SELECT v FROM Venue v WHERE v.totalRows >= :minRows " +
-            "AND v.totalColumns >= :minColumns")
-    List<Venue> findVenuesBySeatingCapacity(
-            @Param("minRows") Integer minRows,
-            @Param("minColumns") Integer minColumns
-    );
-
     // 查詢場地使用率
     @Query("SELECT v, COUNT(s) FROM Venue v LEFT JOIN v.schedules s " +
-            "WHERE s.showTime BETWEEN :startTime AND :endTime " +
+            "WHERE v.venueId = :venueId AND " +
+            "s.showDate BETWEEN :startTime AND :endTime AND " +
+            "s.isCancelled = false " +
             "GROUP BY v")
     List<Object[]> getVenueUtilization(
+            @Param("venueId") Long venueId,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
     );
 
-    // 查詢特定設施的場地
-    @Query("SELECT v FROM Venue v WHERE v.facilities LIKE %:facility%")
-    List<Venue> findVenuesByFacility(@Param("facility") String facility);
-
-    // 查詢維護歷史
-    @Query("SELECT v FROM Venue v WHERE v.lastMaintenanceDate IS NOT NULL " +
-            "ORDER BY v.lastMaintenanceDate DESC")
-    List<Venue> findVenuesWithMaintenanceHistory(Pageable pageable);
-
     // 軟刪除
     @Modifying
-    @Query("UPDATE Venue v SET v.isDeleted = true WHERE v.venueId = :venueId")
+    @Query("UPDATE Venue v SET v.isDeleted = true, v.deletedAt = CURRENT_TIMESTAMP " +
+            "WHERE v.venueId = :venueId")
     int softDeleteVenue(@Param("venueId") Long venueId);
 
-    // 新增檢查場地名稱是否存在的方法
+    // 檢查場地名稱是否存在
     boolean existsByVenueName(String venueName);
 
-    // 修改查詢特定時段內可用座位數的方法
-    @Query("SELECT v, (v.totalSeats - COUNT(DISTINCT sb)) as availableSeats " +
-            "FROM Venue v " +
-            "LEFT JOIN v.schedules s " +
-            "LEFT JOIN s.bookings b " +
-            "LEFT JOIN b.seatBookings sb " +
-            "WHERE s.showTime BETWEEN :startTime AND :endTime " +
+    // 查詢特定時段內可用座位數
+    @Query("SELECT v, COUNT(s) FROM Venue v " +
+            "LEFT JOIN v.seats s " +
+            "WHERE s.status = 'AVAILABLE' AND v.isDeleted = false " +
             "GROUP BY v")
     List<Object[]> findAvailableSeatsInTimeRange(
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
     );
 
-    // 修改查詢特定時段內座位使用率的方法
-    @Query("SELECT v.venueName, " +
-            "COUNT(DISTINCT sb) as bookedSeats, " +
-            "v.totalSeats as totalSeats, " +
-            "(COUNT(DISTINCT sb) * 100.0 / v.totalSeats) as occupancyRate " +
+    // 查詢維護歷史
+    @Query("SELECT new map(" +
+            "v.status as status, " +
+            "v.updatedAt as maintenanceDate, " +
+            "v.venueName as venueName) " +
             "FROM Venue v " +
-            "LEFT JOIN v.schedules s " +
-            "LEFT JOIN s.bookings b " +
-            "LEFT JOIN b.seatBookings sb " +
-            "WHERE s.showTime BETWEEN :startTime AND :endTime " +
-            "GROUP BY v")
-    List<Object[]> getSeatsUtilizationStats(
-            @Param("startTime") LocalDateTime startTime,
-            @Param("endTime") LocalDateTime endTime
-    );
-    // 新增查詢維護記錄的方法
-    @Query("SELECT v.venueName, " +
-            "v.lastMaintenanceDate, " +
-            "v.nextMaintenanceDate, " +
-            "v.maintenanceNotes " +
-            "FROM Venue v " +
-            "WHERE v.lastMaintenanceDate IS NOT NULL " +
-            "ORDER BY v.lastMaintenanceDate DESC")
-    Page<Object[]> findMaintenanceHistory(Pageable pageable);
-
-    // 新增查詢即將需要維護的場地
-    @Query("SELECT v FROM Venue v " +
-            "WHERE v.nextMaintenanceDate <= :futureDate " +
-            "AND v.status = 'ACTIVE' " +
-            "ORDER BY v.nextMaintenanceDate ASC")
-    List<Venue> findUpcomingMaintenance(
-            @Param("futureDate") LocalDateTime futureDate
-    );
-
-    // 新增更新場地配置的方法
-    @Modifying
-    @Query("UPDATE Venue v SET " +
-            "v.totalRows = :totalRows, " +
-            "v.totalColumns = :totalColumns, " +
-            "v.totalSeats = :totalSeats, " +
-            "v.updatedAt = CURRENT_TIMESTAMP " +
-            "WHERE v.venueId = :venueId")
-    int updateVenueConfiguration(
+            "WHERE v.venueId = :venueId AND v.status = 'MAINTENANCE' " +
+            "ORDER BY v.updatedAt DESC")
+    Page<Map<String, Object>> findMaintenanceHistoryByVenueId(
             @Param("venueId") Long venueId,
-            @Param("totalRows") Integer totalRows,
-            @Param("totalColumns") Integer totalColumns,
-            @Param("totalSeats") Integer totalSeats
+            Pageable pageable
     );
 
+    // 查詢場地座位使用情況
+    @Query("SELECT new map(" +
+            "v.venueName as venueName, " +
+            "v.totalSeats as totalSeats, " +
+            "COUNT(s) as availableSeats) " +
+            "FROM Venue v LEFT JOIN v.seats s " +
+            "WHERE v.venueId = :venueId AND s.status = 'AVAILABLE' " +
+            "GROUP BY v")
+    Map<String, Object> findVenueSeatStatus(@Param("venueId") Long venueId);
+
+    // 查詢所有未刪除的場地
+    @Query("SELECT v FROM Venue v WHERE v.isDeleted = false ORDER BY v.createdAt DESC")
+    List<Venue> findAllActiveVenues();
+
+    // 查詢特定狀態且未刪除的場地
+    @Query("SELECT v FROM Venue v WHERE v.status = :status AND v.isDeleted = false")
+    List<Venue> findActiveVenuesByStatus(@Param("status") Venue.VenueStatus status);
 }

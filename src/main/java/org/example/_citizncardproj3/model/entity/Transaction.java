@@ -177,4 +177,10 @@ public class Transaction {
         return String.format("Transaction{id=%d, number='%s', type=%s, amount=%.2f, status=%s}",
                 transactionId, transactionNumber, type, amount, status);
     }
+    // 在Transaction類中添加此方法
+    public boolean isRefundable() {
+        return this.status == TransactionStatus.SUCCESS &&
+                (this.type == TransactionType.PAYMENT || this.type == TransactionType.DEPOSIT) &&
+                LocalDateTime.now().minusDays(30).isBefore(this.transactionTime);
+    }
 }
