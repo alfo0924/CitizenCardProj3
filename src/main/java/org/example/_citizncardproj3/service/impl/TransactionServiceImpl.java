@@ -77,7 +77,7 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         transaction.setStatus(Transaction.TransactionStatus.SUCCESS);
-        transaction.setCompletionTime(LocalDateTime.now());
+        transaction.setTransactionTime(LocalDateTime.now());
         transaction = transactionRepository.save(transaction);
 
         // 發送通知
@@ -107,7 +107,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .type(Transaction.TransactionType.REFUND)
                 .status(Transaction.TransactionStatus.PENDING)
                 .paymentMethod(Transaction.PaymentMethod.WALLET_BALANCE)
-                .referenceNumber(transaction.getTransactionNumber())
+                .transactionNumber(transaction.getTransactionNumber())
                 .transactionTime(LocalDateTime.now())
                 .build();
 

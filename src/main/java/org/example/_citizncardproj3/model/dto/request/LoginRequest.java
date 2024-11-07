@@ -1,15 +1,13 @@
 package org.example._citizncardproj3.model.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import java.io.Serial;
 import java.io.Serializable;
 
 @Data
@@ -18,6 +16,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class LoginRequest implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @NotBlank(message = "電子郵件不能為空")
@@ -92,6 +91,7 @@ public class LoginRequest implements Serializable {
     }
 
     // 密碼強度枚舉
+    @Getter
     public enum PasswordStrength {
         WEAK("弱"),
         MEDIUM("中"),
@@ -103,9 +103,6 @@ public class LoginRequest implements Serializable {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 清理敏感數據

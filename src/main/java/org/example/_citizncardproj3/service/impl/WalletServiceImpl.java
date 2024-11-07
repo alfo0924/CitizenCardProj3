@@ -79,7 +79,7 @@ public class WalletServiceImpl implements WalletService {
         Transaction transaction = Transaction.builder()
                 .wallet(wallet)
                 .amount(amount)
-                .type(Transaction.TransactionType.TOP_UP)
+                .type(Transaction.TransactionType.DEPOSIT)
                 .status(Transaction.TransactionStatus.PENDING)
                 .paymentMethod(paymentMethod)
                 .transactionTime(LocalDateTime.now())
@@ -93,7 +93,7 @@ public class WalletServiceImpl implements WalletService {
 
         // 完成交易
         transaction.setStatus(Transaction.TransactionStatus.SUCCESS);
-        transaction.setCompletionTime(LocalDateTime.now());
+        transaction.setTransactionTime(LocalDateTime.now());
         transactionRepository.save(transaction);
 
         // 發送通知
@@ -145,7 +145,7 @@ public class WalletServiceImpl implements WalletService {
 
         // 完成交易
         transaction.setStatus(Transaction.TransactionStatus.SUCCESS);
-        transaction.setCompletionTime(LocalDateTime.now());
+        transaction.setTransactionTime(LocalDateTime.now());
         transactionRepository.save(transaction);
 
         return wallet;

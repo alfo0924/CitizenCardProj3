@@ -27,8 +27,6 @@ public class TopUpRequest {
     @NotNull(message = "支付方式不能為空")
     private Transaction.PaymentMethod paymentMethod;
 
-    private String bankCode;  // 銀行代碼（如果使用銀行轉帳）
-
     private String cardNumber;  // 信用卡號（如果使用信用卡）
 
     private String cardHolderName;  // 持卡人姓名
@@ -52,27 +50,16 @@ public class TopUpRequest {
             throw new IllegalArgumentException("支付方式不能為空");
         }
 
-// 根據支付方式驗證必要欄位
+        // 根據支付方式驗證必要欄位
         switch (paymentMethod) {
             case CREDIT_CARD:
-            case DEBIT_CARD:
                 validateCreditCardInfo();
                 break;
-            case BANK_TRANSFER:
-                validateBankTransferInfo();
+            case WALLET_BALANCE:
+                // 錢包餘額支付不需要額外驗證
                 break;
-            case MOBILE_PAYMENT:
-            case LINE_PAY:
-            case JKO_PAY:
-            case APPLE_PAY:
-            case GOOGLE_PAY:
-                // 手機支付可能需要其他驗證
-                break;
-            case E_WALLET:
-                // 電子錢包驗證
-                break;
-            case CASH:
-                // 現金支付驗證
+            case STORE_PAYMENT:
+                // 超商付款不需要額外驗證
                 break;
             default:
                 throw new IllegalArgumentException("不支援的支付方式: " + paymentMethod);
@@ -92,13 +79,6 @@ public class TopUpRequest {
         }
         if (cvv == null || cvv.trim().isEmpty()) {
             throw new IllegalArgumentException("安全碼不能為空");
-        }
-    }
-
-    // 驗證銀行轉帳資訊
-    private void validateBankTransferInfo() {
-        if (bankCode == null || bankCode.trim().isEmpty()) {
-            throw new IllegalArgumentException("銀行代碼不能為空");
         }
     }
 

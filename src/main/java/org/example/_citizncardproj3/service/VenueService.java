@@ -5,11 +5,15 @@ import org.example._citizncardproj3.model.entity.Venue;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 public interface VenueService {
+
+    @Transactional
+    Venue createVenue(String venueName, String address, Integer totalSeats);
 
     /**
      * 創建場地
@@ -27,6 +31,9 @@ public interface VenueService {
      * @param maintenanceDate 維護日期
      */
     void setMaintenance(Long venueId, LocalDateTime maintenanceDate);
+
+    @org.springframework.transaction.annotation.Transactional
+    void setMaintenance(Long venueId);
 
     /**
      * 完成場地維護

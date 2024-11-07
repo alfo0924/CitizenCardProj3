@@ -30,7 +30,7 @@ public class VenueServiceImpl implements VenueService {
 
     @Override
     @Transactional
-    public Venue createVenue(String venueName, String address, Integer totalRows, Integer totalColumns) {
+    public Venue createVenue(String venueName, String address, Integer totalSeats) {
         // 檢查場地名稱是否已存在
         if (venueRepository.existsByVenueName(venueName)) {
             throw new IllegalStateException("場地名稱已存在");
@@ -40,10 +40,9 @@ public class VenueServiceImpl implements VenueService {
         Venue venue = Venue.builder()
                 .venueName(venueName)
                 .address(address)
-                .totalRows(totalRows)
-                .totalColumns(totalColumns)
-                .totalSeats(totalRows * totalColumns)
+                .totalSeats(totalSeats)
                 .status(Venue.VenueStatus.ACTIVE)
+                .seatingLayout(generateDefaultSeatingLayout(totalSeats))
                 .build();
 
         venue = venueRepository.save(venue);
@@ -55,8 +54,18 @@ public class VenueServiceImpl implements VenueService {
     }
 
     @Override
-    @Transactional
+    public Venue createVenue(String venueName, String address, Integer totalRows, Integer totalColumns) {
+        return null;
+    }
+
+    @Override
     public void setMaintenance(Long venueId, LocalDateTime maintenanceDate) {
+
+    }
+
+    @Transactional
+    @Override
+    public void setMaintenance(Long venueId) {
         Venue venue = venueRepository.findById(venueId)
                 .orElseThrow(() -> new CustomException.VenueNotFoundException(venueId));
 
@@ -64,7 +73,7 @@ public class VenueServiceImpl implements VenueService {
             throw new IllegalStateException("場地有未完成的場次，無法進行維護");
         }
 
-        venue.setMaintenance(maintenanceDate);
+        venue.setMaintenance();
         venueRepository.save(venue);
     }
 
@@ -90,7 +99,7 @@ public class VenueServiceImpl implements VenueService {
 
     @Override
     public List<Venue> getAvailableVenues() {
-        return venueRepository.findAvailableVenues(50); // 最小座位數設為50
+        return venueRepository.findByStatusAndIsDeletedFalse(Venue.VenueStatus.ACTIVE);
     }
 
     @Override
@@ -103,7 +112,7 @@ public class VenueServiceImpl implements VenueService {
         Venue venue = venueRepository.findById(venueId)
                 .orElseThrow(() -> new CustomException.VenueNotFoundException(venueId));
 
-        return scheduleRepository.findByVenueOrderByShowTimeAsc(venue, pageable);
+        return scheduleRepository.findByVenueOrderByShowDateAscStartTimeAsc(venue, pageable);
     }
 
     @Override
@@ -111,16 +120,15 @@ public class VenueServiceImpl implements VenueService {
         Venue venue = venueRepository.findById(venueId)
                 .orElseThrow(() -> new CustomException.VenueNotFoundException(venueId));
 
-        return venueRepository.getVenueUtilization(startTime, endTime);
+        return scheduleRepository.getVenueUtilization(venueId, startTime, endTime);
     }
 
     @Override
     @Transactional
     public void checkAndUpdateMaintenanceStatus() {
-        List<Venue> venuesNeedingMaintenance =
-                venueRepository.findVenuesNeedingMaintenance(LocalDateTime.now());
+        List<Venue> venues = venueRepository.findByStatus(Venue.VenueStatus.ACTIVE);
 
-        for (Venue venue : venuesNeedingMaintenance) {
+        for (Venue venue : venues) {
             if (!venue.hasActiveSchedules()) {
                 venue.setStatus(Venue.VenueStatus.MAINTENANCE);
                 venueRepository.save(venue);
@@ -135,12 +143,28 @@ public class VenueServiceImpl implements VenueService {
 
     @Override
     public Venue getVenueDetails(Long venueId) {
-        return null;
+        return venueRepository.findById(venueId)
+                .orElseThrow(() -> new CustomException.VenueNotFoundException(venueId));
     }
 
     @Override
+    @Transactional
     public Venue updateVenueInfo(Long venueId, String venueName, String address) {
-        return null;
+        Venue venue = venueRepository.findById(venueId)
+                .orElseThrow(() -> new CustomException.VenueNotFoundException(venueId));
+
+        if (venueName != null && !venueName.equals(venue.getVenueName())) {
+            if (venueRepository.existsByVenueName(venueName)) {
+                throw new IllegalStateException("場地名稱已存在");
+            }
+            venue.setVenueName(venueName);
+        }
+
+        if (address != null) {
+            venue.setAddress(address);
+        }
+
+        return venueRepository.save(venue);
     }
 
     @Override
@@ -155,24 +179,30 @@ public class VenueServiceImpl implements VenueService {
 
     // 私有輔助方法
     private void initializeSeats(Venue venue) {
-        for (int row = 0; row < venue.getTotalRows(); row++) {
-            String rowLabel = String.valueOf((char)('A' + row));
+        int totalSeats = venue.getTotalSeats();
+        for (int i = 1; i <= totalSeats; i++) {
+            SeatManagement seat = SeatManagement.builder()
+                    .venue(venue)
+                    .seatLabel("SEAT-" + i)
+                    .seatType(SeatManagement.SeatType.REGULAR)
+                    .status(SeatManagement.SeatStatus.AVAILABLE)
+                    .isActive(true)
+                    .build();
 
-            for (int col = 1; col <= venue.getTotalColumns(); col++) {
-                SeatManagement seat = SeatManagement.builder()
-                        .venue(venue)
-                        .seatRow(rowLabel)
-                        .seatColumn(String.valueOf(col))
-                        .seatLabel(rowLabel + col)
-                        .seatZone("GENERAL")
-                        .seatType(SeatManagement.SeatType.REGULAR)
-                        .status(SeatManagement.SeatStatus.AVAILABLE)
-                        .isActive(true)
-                        .build();
-
-                seatManagementRepository.save(seat);
-            }
+            seatManagementRepository.save(seat);
         }
+    }
+
+    private String generateDefaultSeatingLayout(int totalSeats) {
+        StringBuilder layout = new StringBuilder();
+        layout.append("{\"seats\":[");
+        for (int i = 0; i < totalSeats; i++) {
+            layout.append("{\"seatId\":").append(i + 1)
+                    .append(",\"status\":\"AVAILABLE\"}");
+            if (i < totalSeats - 1) layout.append(",");
+        }
+        layout.append("]}");
+        return layout.toString();
     }
 
     private void validateVenueAvailability(Venue venue, LocalDateTime startTime, LocalDateTime endTime) {
@@ -180,8 +210,8 @@ public class VenueServiceImpl implements VenueService {
             throw new IllegalStateException("場地目前無法使用");
         }
 
-        boolean hasConflict = scheduleRepository.existsByVenueAndShowTimeBetween(
-                venue, startTime, endTime);
+        boolean hasConflict = scheduleRepository.existsByVenueAndShowDateBetween(
+                venue, startTime.toLocalDate(), endTime.toLocalDate());
 
         if (hasConflict) {
             throw new IllegalStateException("場地在該時段已有其他場次");

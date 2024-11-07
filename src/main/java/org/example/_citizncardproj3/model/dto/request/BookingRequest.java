@@ -1,10 +1,7 @@
 package org.example._citizncardproj3.model.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -35,6 +32,7 @@ public class BookingRequest {
     private String specialRequests;
 
     // 支付方式枚舉
+    @Getter
     public enum PaymentMethod {
         WALLET("錢包支付"),
         CREDIT_CARD("信用卡支付"),
@@ -46,9 +44,6 @@ public class BookingRequest {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 訂票驗證相關的內部類

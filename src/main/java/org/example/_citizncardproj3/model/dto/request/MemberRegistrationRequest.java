@@ -1,10 +1,7 @@
 package org.example._citizncardproj3.model.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
@@ -54,6 +51,7 @@ public class MemberRegistrationRequest {
     private CardType cardType;
 
     // 卡片類型枚舉
+    @Getter
     public enum CardType {
         GENERAL("一般卡"),
         SENIOR("敬老卡"),
@@ -66,9 +64,6 @@ public class MemberRegistrationRequest {
             this.description = description;
         }
 
-        public String getDescription() {
-            return description;
-        }
     }
 
     // 驗證方法
@@ -107,16 +102,12 @@ public class MemberRegistrationRequest {
 
         int age = LocalDate.now().getYear() - birthday.getYear();
 
-        switch (cardType) {
-            case SENIOR:
-                return age >= 65;
-            case STUDENT:
-                return age >= 6 && age <= 25;
-            case GENERAL:
-                return age >= 18;
-            default:
-                return true;
-        }
+        return switch (cardType) {
+            case SENIOR -> age >= 65;
+            case STUDENT -> age >= 6 && age <= 25;
+            case GENERAL -> age >= 18;
+            default -> true;
+        };
     }
 
     // 卡片類型驗證
